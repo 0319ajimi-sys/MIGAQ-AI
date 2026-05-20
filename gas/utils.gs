@@ -54,7 +54,7 @@ function setupReservationSheet(ss) {
   var headers = [
     '予約ID', '予約日', '開始時間', '終了時間', '顧客名',
     '電話番号', 'メニュー', '担当者', '金額', '来店状況',
-    '支払い方法', 'カレンダー登録', 'メモ'
+    '支払い方法', 'カレンダー登録', 'メモ', 'イベントID'
   ];
 
   // 1行目にヘッダーを書き込む
@@ -81,6 +81,7 @@ function setupReservationSheet(ss) {
   sheet.setColumnWidth(11, 120);  // K: 支払い方法
   sheet.setColumnWidth(12, 120);  // L: カレンダー登録
   sheet.setColumnWidth(13, 200);  // M: メモ
+  sheet.setColumnWidth(14, 250);  // N: イベントID
 
   // 先頭行を固定する（スクロールしてもヘッダーが見える）
   sheet.setFrozenRows(1);

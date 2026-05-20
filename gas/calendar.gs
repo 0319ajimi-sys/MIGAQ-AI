@@ -49,12 +49,14 @@ function registerToCalendar() {
     var price         = sheet.getRange(row, COL.PRICE).getValue();
     var calStatus     = sheet.getRange(row, COL.CALENDAR_STATUS).getValue();
     var memo          = sheet.getRange(row, COL.MEMO).getValue();
+    var eventId       = sheet.getRange(row, COL.EVENT_ID).getValue();
 
-    // すでに登録済みの行はスキップ
-    if (calStatus === '済') {
+    // 「済」かつイベントIDもある → 本当に登録済みなのでスキップ
+    if (calStatus === '済' && eventId) {
       skippedCount++;
       continue;
     }
+    // 「済」だがイベントIDがない → 登録されていない可能性があるので再登録する
 
     // 必須項目が空の行はスキップ
     if (!date || !startTimeStr || !endTimeStr || !customerName) {
@@ -91,12 +93,13 @@ function registerToCalendar() {
 
     // Googleカレンダーにイベントを作成する
     try {
-      calendar.createEvent(eventTitle, startDateTime, endDateTime, {
+      var event = calendar.createEvent(eventTitle, startDateTime, endDateTime, {
         description: eventDescription,
       });
 
-      // L列の「カレンダー登録」を「済」に更新する
+      // L列を「済」、N列にイベントIDを保存する
       sheet.getRange(row, COL.CALENDAR_STATUS).setValue('済');
+      sheet.getRange(row, COL.EVENT_ID).setValue(event.getId());
       registeredCount++;
 
     } catch (e) {
