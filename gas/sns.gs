@@ -46,7 +46,7 @@ var DAILY_PLATFORMS = {
 // 毎朝8時に自動実行される関数（トリガーに登録する）
 // ============================================================
 function sendDailySnsPosts() {
-  var settings = getSnsSettings();
+  var settings = getFullSettings();
   if (!settings) return;
 
   var today = new Date();
@@ -55,13 +55,16 @@ function sendDailySnsPosts() {
   var theme = getTodaysTheme(today);
   var posts = generateTodaysPosts(today, weekday, theme);
 
-  // スプレッドシートに記録
-  saveSnsCalendar(posts, today, weekday, theme);
+  // SNSカレンダーシートに記録し、行番号を受け取る
+  var savedRows = saveSnsCalendar(posts, today, weekday, theme);
 
-  // メールで送信
-  sendPostsEmail(settings.notifyEmail, today, weekday, theme, posts);
+  // 各プラットフォームへ自動投稿
+  var results = autoPostAll(posts, savedRows);
 
-  Logger.log('SNS投稿メールを送信しました：' + todayStr);
+  // 結果メールを送信（自動投稿の成否 + Hotpepperの手動投稿用本文）
+  sendResultEmail(settings.notifyEmail, today, weekday, theme, posts, results);
+
+  Logger.log('SNS自動投稿完了：' + todayStr);
 }
 
 // ============================================================
@@ -705,16 +708,17 @@ function getTemplates() {
 }
 
 // ============================================================
-// スプレッドシートにSNSカレンダーとして保存する
+// スプレッドシートにSNSカレンダーとして保存する（行番号を返す）
 // ============================================================
 function saveSnsCalendar(posts, date, weekday, theme) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('SNSカレンダー');
-  if (!sheet) return;
+  if (!sheet) return [];
 
   var dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'yyyy/MM/dd');
   var lastRow = sheet.getLastRow();
   var newRow = Math.max(lastRow + 1, 2);
+  var savedRows = [];
 
   posts.forEach(function(post) {
     sheet.getRange(newRow, SNS_COL.DATE).setValue(dateStr);
@@ -726,125 +730,18 @@ function saveSnsCalendar(posts, date, weekday, theme) {
     sheet.getRange(newRow, SNS_COL.HASHTAGS).setValue(post.hashtags);
     sheet.getRange(newRow, SNS_COL.TARGET).setValue(post.target);
     sheet.getRange(newRow, SNS_COL.PURPOSE).setValue(post.purpose);
-    sheet.getRange(newRow, SNS_COL.STATUS).setValue('未投稿');
+    sheet.getRange(newRow, SNS_COL.STATUS).setValue('投稿待ち');
+    savedRows.push(newRow);
     newRow++;
   });
+
+  return savedRows;
 }
 
-// ============================================================
-// メールで今日の投稿を送信する
-// ============================================================
-function sendPostsEmail(toEmail, date, weekday, theme, posts) {
-  var dateStr = Utilities.formatDate(date, 'Asia/Tokyo', 'M月d日');
-  var subject = '【MIGAQ SNS秘書】' + dateStr + '（' + weekday + '）の投稿案';
+// sendPostsEmail / buildEmailBody / buildEmailHtml は
+// sendResultEmail / buildResultEmailHtml (sns-post.gs) に統合されました
 
-  var body = buildEmailBody(dateStr, weekday, theme, posts);
-  var htmlBody = buildEmailHtml(dateStr, weekday, theme, posts);
-
-  GmailApp.sendEmail(toEmail, subject, body, {
-    htmlBody: htmlBody,
-    name: 'MIGAQ SNS秘書AI',
-  });
-}
-
-// ============================================================
-// メール本文（プレーンテキスト）を組み立てる
-// ============================================================
-function buildEmailBody(dateStr, weekday, theme, posts) {
-  var lines = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    'MIGAQ SNS秘書AI ｜ ' + dateStr + '（' + weekday + '）の投稿案',
-    '今日のテーマ：' + theme,
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-  ];
-
-  posts.forEach(function(post, i) {
-    lines.push('【投稿 ' + (i + 1) + '】' + post.platform);
-    lines.push('─────────────');
-    if (post.title) lines.push('■ タイトル：' + post.title);
-    lines.push('■ 本文：');
-    lines.push(post.body);
-    lines.push('');
-    lines.push('■ ハッシュタグ：');
-    lines.push(post.hashtags);
-    lines.push('');
-    lines.push('■ ターゲット：' + post.target);
-    lines.push('■ 目的：' + post.purpose);
-    lines.push('');
-    lines.push('');
-  });
-
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  lines.push('投稿後はスプレッドシートの「SNSカレンダー」シートで');
-  lines.push('「投稿済み」に変更してください。');
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
-  return lines.join('\n');
-}
-
-// ============================================================
-// メール本文（HTML）を組み立てる
-// ============================================================
-function buildEmailHtml(dateStr, weekday, theme, posts) {
-  var platformColors = {
-    'Instagram': '#E1306C',
-    'Instagram Reels': '#833AB4',
-    'X': '#1DA1F2',
-    'Hotpepper': '#FF0033',
-  };
-
-  var html = [
-    '<div style="font-family: sans-serif; max-width: 700px; margin: 0 auto;">',
-    '<div style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 24px; border-radius: 12px 12px 0 0;">',
-    '<h1 style="margin: 0; font-size: 20px;">🤖 MIGAQ SNS秘書AI</h1>',
-    '<p style="margin: 8px 0 0; opacity: 0.8;">' + dateStr + '（' + weekday + '）の投稿案</p>',
-    '<p style="margin: 4px 0 0; font-size: 14px; opacity: 0.6;">今日のテーマ：' + theme + '</p>',
-    '</div>',
-  ];
-
-  posts.forEach(function(post, i) {
-    var color = platformColors[post.platform] || '#666';
-    html.push('<div style="border: 1px solid #eee; border-top: none; padding: 24px;">');
-    html.push('<div style="display: inline-block; background: ' + color + '; color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-bottom: 16px;">' + post.platform + '</div>');
-    if (post.title) {
-      html.push('<h2 style="margin: 0 0 12px; font-size: 18px; color: #1a1a2e;">' + post.title + '</h2>');
-    }
-    html.push('<div style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">');
-    html.push('<p style="margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: #333;">' + post.body + '</p>');
-    html.push('</div>');
-    html.push('<p style="margin: 0 0 8px; font-size: 13px; color: #666;"><strong>ハッシュタグ：</strong><br><span style="color: #1DA1F2;">' + post.hashtags + '</span></p>');
-    html.push('<div style="display: flex; gap: 16px; margin-top: 12px;">');
-    html.push('<span style="font-size: 12px; color: #888;">👥 ' + post.target + '</span>');
-    html.push('<span style="font-size: 12px; color: #888;">🎯 ' + post.purpose + '</span>');
-    html.push('</div>');
-    html.push('</div>');
-  });
-
-  html.push('<div style="background: #f0f4ff; padding: 16px; border-radius: 0 0 12px 12px; border: 1px solid #eee; border-top: none;">');
-  html.push('<p style="margin: 0; font-size: 13px; color: #666;">投稿後はスプレッドシートの「SNSカレンダー」シートで <strong>「投稿済み」</strong> に変更してください。</p>');
-  html.push('</div>');
-  html.push('</div>');
-
-  return html.join('');
-}
-
-// ============================================================
-// SNS設定をスプレッドシートから読む
-// ============================================================
-function getSnsSettings() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('設定');
-  if (!sheet) return null;
-
-  var notifyEmail = sheet.getRange('B4').getValue();
-  if (!notifyEmail) {
-    // 設定がなければオーナーのGmailアドレスを使う
-    notifyEmail = Session.getActiveUser().getEmail();
-  }
-
-  return { notifyEmail: notifyEmail };
-}
+// getSnsSettings は getFullSettings (sns-post.gs) に統合されました
 
 // ============================================================
 // SNSカレンダーシートをセットアップする（初回1回だけ実行）
@@ -865,30 +762,27 @@ function setupSnsCalendarSheet() {
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
-  // ヘッダーのスタイル
   var headerRange = sheet.getRange(1, 1, 1, headers.length);
   headerRange.setBackground('#1a1a2e');
   headerRange.setFontColor('#ffffff');
   headerRange.setFontWeight('bold');
   headerRange.setHorizontalAlignment('center');
 
-  // 列幅設定
-  sheet.setColumnWidth(1, 100);   // 日付
-  sheet.setColumnWidth(2, 60);    // 曜日
-  sheet.setColumnWidth(3, 140);   // テーマ
-  sheet.setColumnWidth(4, 130);   // プラットフォーム
-  sheet.setColumnWidth(5, 200);   // タイトル
-  sheet.setColumnWidth(6, 300);   // 本文
-  sheet.setColumnWidth(7, 200);   // ハッシュタグ
-  sheet.setColumnWidth(8, 150);   // ターゲット
-  sheet.setColumnWidth(9, 150);   // 目的
-  sheet.setColumnWidth(10, 90);   // 状態
-  sheet.setColumnWidth(11, 130);  // 投稿日時
-  sheet.setColumnWidth(12, 150);  // メモ
-
+  sheet.setColumnWidth(1, 100);
+  sheet.setColumnWidth(2, 60);
+  sheet.setColumnWidth(3, 140);
+  sheet.setColumnWidth(4, 130);
+  sheet.setColumnWidth(5, 200);
+  sheet.setColumnWidth(6, 300);
+  sheet.setColumnWidth(7, 200);
+  sheet.setColumnWidth(8, 150);
+  sheet.setColumnWidth(9, 150);
+  sheet.setColumnWidth(10, 90);
+  sheet.setColumnWidth(11, 130);
+  sheet.setColumnWidth(12, 150);
   sheet.setFrozenRows(1);
 
-  // 設定シートにSNS通知メール欄を追加
+  // 設定シートに通知メール欄を追加
   var settingsSheet = ss.getSheetByName('設定');
   if (settingsSheet) {
     settingsSheet.getRange('A4').setValue('SNS通知メール');
@@ -899,18 +793,19 @@ function setupSnsCalendarSheet() {
 
   SpreadsheetApp.getUi().alert(
     '✅ SNSカレンダーシートを作成しました！\n\n' +
-    '次のステップ：\n' +
-    '1. 「設定」シートのB4に通知メールアドレスを確認\n' +
-    '2. 「MIGAQ管理」→「毎朝SNS投稿案をメール送信（トリガー設定）」を実行\n' +
-    '3. 毎朝8時に自動でメールが届きます'
+    '【次のステップ】\n' +
+    '1. 「SNS管理」→「API設定を追加」を実行\n' +
+    '2. 設定シートにAPIキーを入力\n' +
+    '3. 準備ができたらB5を「ON」に変更\n' +
+    '4. 「自動投稿トリガーを設定」を実行\n' +
+    '5. 「今すぐ自動投稿（テスト）」で動作確認'
   );
 }
 
 // ============================================================
-// 毎朝8時の自動トリガーをセットする（初回1回だけ実行）
+// 毎朝8時の自動投稿トリガーをセットする（初回1回だけ実行）
 // ============================================================
 function setupDailySnsTrigger() {
-  // 既存のトリガーを削除（重複防止）
   var triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(function(trigger) {
     if (trigger.getHandlerFunction() === 'sendDailySnsPosts') {
@@ -918,7 +813,6 @@ function setupDailySnsTrigger() {
     }
   });
 
-  // 毎日8:00に実行するトリガーを作成
   ScriptApp.newTrigger('sendDailySnsPosts')
     .timeBased()
     .everyDays(1)
@@ -927,10 +821,12 @@ function setupDailySnsTrigger() {
     .create();
 
   SpreadsheetApp.getUi().alert(
-    '✅ トリガーを設定しました！\n\n' +
-    '毎朝8:00に今日の投稿案がメールで届きます。\n\n' +
-    '今すぐ動作テストする場合は\n' +
-    '「今日の投稿案をすぐに送信（テスト）」を実行してください。'
+    '✅ 自動投稿トリガーを設定しました！\n\n' +
+    '毎朝8:00に Instagram・X へ自動投稿されます。\n' +
+    '結果はメールと「SNSカレンダー」シートで確認できます。\n\n' +
+    '※ 設定シートB5が「ON」のときのみ実際に投稿されます。\n\n' +
+    '今すぐテストする場合は\n' +
+    '「今すぐ自動投稿（テスト）」を実行してください。'
   );
 }
 
@@ -943,16 +839,20 @@ function getWeekdayJa(date) {
 }
 
 // ============================================================
-// メニューに「SNS管理」を追加する（onOpen に追記が必要）
+// メニューに「SNS管理」を追加する（onOpen から呼び出す）
 // ============================================================
 function addSnsMenu(menu) {
   return menu
     .addSeparator()
     .addSubMenu(
       SpreadsheetApp.getUi()
-        .createMenu('📱 SNS管理')
-        .addItem('🔧 SNSカレンダーシートを作成（初回のみ）', 'setupSnsCalendarSheet')
-        .addItem('⏰ 毎朝SNS投稿案をメール送信（トリガー設定）', 'setupDailySnsTrigger')
-        .addItem('📨 今日の投稿案をすぐに送信（テスト）', 'sendDailySnsPosts')
+        .createMenu('📱 SNS完全自動投稿')
+        .addItem('① SNSカレンダーシートを作成（初回のみ）', 'setupSnsCalendarSheet')
+        .addItem('② API設定を追加（初回のみ）',              'setupApiSettingsRows')
+        .addItem('③ 自動投稿トリガーを設定',                 'setupDailySnsTrigger')
+        .addSeparator()
+        .addItem('🚀 今すぐ自動投稿（テスト実行）',          'sendDailySnsPosts')
+        .addItem('🐦 Xにテスト投稿',                         'testPostToX')
+        .addItem('📸 Instagramにテスト投稿',                 'testPostToInstagram')
     );
 }
