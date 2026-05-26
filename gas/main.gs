@@ -9,16 +9,17 @@
 // スプレッドシートを開いたときに自動で実行される関数
 // ============================================================
 function onOpen() {
-  // メニューバーに「MIGAQ管理」というメニューを追加する
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('🦷 MIGAQ管理')
-    .addItem('📅 カレンダーに登録する', 'registerToCalendar')       // カレンダー登録
-    .addSeparator()                                                    // 区切り線
-    .addItem('💰 売上を集計する', 'calculateSales')                  // 売上集計
-    .addSeparator()                                                    // 区切り線
-    .addItem('🔢 予約IDを自動で振る', 'assignReservationIds')        // ID自動付与
-    .addItem('⚠️ 重複予約をチェックする', 'checkDuplicates')          // 重複チェック
-    .addToUi();
+  var menu = ui.createMenu('🦷 MIGAQ管理')
+    .addItem('📅 カレンダーに登録する', 'registerToCalendar')
+    .addSeparator()
+    .addItem('💰 売上を集計する', 'calculateSales')
+    .addSeparator()
+    .addItem('🔢 予約IDを自動で振る', 'assignReservationIds')
+    .addItem('⚠️ 重複予約をチェックする', 'checkDuplicates');
+
+  // SNS管理サブメニューを追加
+  addSnsMenu(menu).addToUi();
 }
 
 // ============================================================
