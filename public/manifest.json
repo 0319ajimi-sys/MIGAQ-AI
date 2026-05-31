@@ -1,0 +1,24 @@
+{
+  "name": "MIGAQ アンケート",
+  "short_name": "MIGAQ",
+  "description": "第一印象改善サロン MIGAQ 会員アンケート",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#81D8D0",
+  "theme_color": "#81D8D0",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

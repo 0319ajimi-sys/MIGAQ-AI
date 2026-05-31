@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-migaq-bg-light text-migaq-text font-sans;
+    overscroll-behavior: none;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-migaq-primary text-white font-semibold py-3 px-8 rounded-full
+           transition-all duration-200 active:scale-95
+           hover:bg-migaq-primary-dark shadow-md hover:shadow-lg
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-migaq-text font-semibold py-3 px-8 rounded-full
+           border border-migaq-border transition-all duration-200
+           active:scale-95 hover:bg-migaq-bg-light
+           disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-migaq-border p-6;
+  }
+
+  .checkbox-item {
+    @apply flex items-center gap-3 p-4 rounded-xl border-2 border-migaq-border
+           cursor-pointer transition-all duration-150 select-none
+           hover:border-migaq-primary hover:bg-migaq-bg-light
+           active:scale-98;
+  }
+
+  .checkbox-item.selected {
+    @apply border-migaq-primary bg-migaq-bg-light;
+  }
+
+  .radio-item {
+    @apply flex items-center gap-3 p-4 rounded-xl border-2 border-migaq-border
+           cursor-pointer transition-all duration-150 select-none
+           hover:border-migaq-primary hover:bg-migaq-bg-light;
+  }
+
+  .radio-item.selected {
+    @apply border-migaq-primary bg-migaq-bg-light;
+  }
+}
