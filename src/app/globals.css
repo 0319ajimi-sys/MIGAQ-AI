@@ -42,7 +42,7 @@
     @apply flex items-center gap-3 p-4 rounded-xl border-2 border-migaq-border
            cursor-pointer transition-all duration-150 select-none
            hover:border-migaq-primary hover:bg-migaq-bg-light
-           active:scale-98;
+           active:scale-95;
   }
 
   .checkbox-item.selected {
