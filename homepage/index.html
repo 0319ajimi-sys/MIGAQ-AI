@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MIGAQ | 印象改善サロン</title>
+  <meta name="description" content="MIGAQ（ミガク）は、あなたの第一印象を磨く印象改善サロンです。ホワイトニング・表情筋トレーニング・セルフケア指導で、内側から輝く自分へ。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #0f0f0f;
+      --dark:    #1c1a18;
+      --gold:    #c8a96e;
+      --gold-lt: #e2c98a;
+      --cream:   #f5f0e8;
+      --ivory:   #fdfaf5;
+      --gray:    #7a7572;
+      --lgray:   #d5d0c8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: var(--ivory);
+      color: var(--dark);
+      font-weight: 300;
+      line-height: 1.8;
+      overflow-x: hidden;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--cream); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ===== Navigation ===== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 48px;
+      transition: background 0.4s, padding 0.4s, box-shadow 0.4s;
+    }
+
+    nav.scrolled {
+      background: rgba(15, 15, 15, 0.94);
+      backdrop-filter: blur(12px);
+      padding: 16px 48px;
+      box-shadow: 0 1px 0 rgba(200,169,110,0.2);
+    }
+
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+    }
+
+    .nav-logo span {
+      font-weight: 300;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      display: block;
+      color: var(--lgray);
+      margin-top: -4px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      transition: color 0.3s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 0; right: 0;
+      height: 1px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+
+    .nav-cta {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      padding: 10px 24px;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      transition: all 0.3s;
+    }
+
+    .nav-cta:hover {
+      background: var(--gold);
+      color: var(--black);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--gold);
+      transition: all 0.3s;
+    }
+
+    /* ===== Hero ===== */
+    #hero {
+      position: relative;
+      height: 100vh;
+      min-height: 700px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background: var(--black);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 50%, rgba(200,169,110,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(200,169,110,0.05) 0%, transparent 50%),
+        linear-gradient(135deg, #0f0f0f 0%, #1c1815 50%, #0f0f0f 100%);
+    }
+
+    .hero-line {
+      position: absolute;
+      top: 0; right: 200px;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(200,169,110,0.3) 40%, rgba(200,169,110,0.1) 70%, transparent);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 0 80px;
+      max-width: 800px;
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.5em;
+      color: var(--gold);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 40px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(64px, 8vw, 110px);
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: 0.05em;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .hero-title .gold { color: var(--gold); }
+
+    .hero-subtitle-jp {
+      font-family: 'Noto Serif JP', serif;
+      font-size: clamp(16px, 2.5vw, 24px);
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: var(--lgray);
+      margin-bottom: 40px;
+    }
+
+    .hero-desc {
+      font-size: 13px;
+      line-height: 2.2;
+      color: rgba(255,255,255,0.55);
+      max-width: 440px;
+      margin-bottom: 56px;
+      letter-spacing: 0.05em;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 40px;
+      background: var(--gold);
+      color: var(--black);
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      font-weight: 400;
+      transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-lt);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(200,169,110,0.3);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 40px;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      transition: all 0.3s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: 48px;
+      left: 80px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .hero-scroll-line {
+      width: 60px;
+      height: 1px;
+      background: rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-scroll-line::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--gold);
+      animation: scrollLine 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollLine {
+      0% { left: -100%; }
+      50% { left: 0; }
+      100% { left: 100%; }
+    }
+
+    /* ===== Numbers ===== */
+    #numbers {
+      background: var(--black);
+      border-top: 1px solid rgba(200,169,110,0.15);
+      border-bottom: 1px solid rgba(200,169,110,0.15);
+      padding: 60px 80px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .number-item {
+      text-align: center;
+      padding: 24px 32px;
+      border-right: 1px solid rgba(200,169,110,0.1);
+      position: relative;
+    }
+
+    .number-item:last-child { border-right: none; }
+
+    .number-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 52px;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .number-unit {
+      font-size: 14px;
+      color: var(--gold);
+      margin-left: 4px;
+    }
+
+    .number-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.4);
+      margin-top: 8px;
+    }
+
+    /* ===== Section Base ===== */
+    section { padding: 120px 80px; }
+
+    .section-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.5em;
+      color: var(--gold);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 32px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 4vw, 56px);
+      font-weight: 300;
+      line-height: 1.2;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    .section-title-jp {
+      font-family: 'Noto Serif JP', serif;
+      font-size: clamp(14px, 1.5vw, 18px);
+      font-weight: 300;
+      letter-spacing: 0.25em;
+      color: var(--gray);
+      margin-bottom: 48px;
+    }
+
+    .section-divider {
+      width: 48px;
+      height: 1px;
+      background: var(--gold);
+      margin-bottom: 48px;
+    }
+
+    /* ===== Concept ===== */
+    #concept {
+      background: var(--ivory);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      padding: 120px 80px;
+    }
+
+    .concept-visual {
+      position: relative;
+      aspect-ratio: 3/4;
+      background: var(--cream);
+      overflow: hidden;
+    }
+
+    .concept-visual-inner {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(145deg, #e8e0d5 0%, #d5cbbf 50%, #c9bfb2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .concept-visual-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 120px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: -0.05em;
+      user-select: none;
+    }
+
+    .concept-visual-badge {
+      position: absolute;
+      bottom: 32px;
+      right: -24px;
+      width: 120px;
+      height: 120px;
+      background: var(--black);
+      border: 1px solid var(--gold);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .concept-visual-badge .num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .concept-visual-badge .txt {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .concept-text { padding-left: 24px; }
+
+    .concept-body {
+      font-size: 14px;
+      line-height: 2.4;
+      color: var(--gray);
+      letter-spacing: 0.05em;
+    }
+
+    .concept-body p + p { margin-top: 24px; }
+
+    .concept-philosophy {
+      margin-top: 48px;
+      padding: 32px;
+      border-left: 2px solid var(--gold);
+      background: rgba(200,169,110,0.04);
+    }
+
+    .concept-philosophy p {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      line-height: 2.2;
+      color: var(--dark);
+    }
+
+    /* ===== Services ===== */
+    #services {
+      background: var(--dark);
+      color: #fff;
+    }
+
+    .services-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 64px;
+    }
+
+    .services-header .section-title { color: #fff; }
+    .services-header .section-title-jp { color: rgba(255,255,255,0.4); margin-bottom: 0; }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    .service-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(200,169,110,0.1);
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s;
+      cursor: default;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(200,169,110,0.06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .service-card:hover {
+      border-color: rgba(200,169,110,0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+
+    .service-card:hover::before { opacity: 1; }
+
+    .service-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 64px;
+      font-weight: 300;
+      color: rgba(200,169,110,0.15);
+      line-height: 1;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .service-icon {
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(200,169,110,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      font-size: 20px;
+      color: var(--gold);
+    }
+
+    .service-name {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .service-name-en {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .service-desc {
+      font-size: 12px;
+      line-height: 2.2;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.05em;
+    }
+
+    .service-price {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(200,169,110,0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .service-price-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .service-price-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--gold-lt);
+    }
+
+    .service-price-value span {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== Flow ===== */
+    #flow {
+      background: var(--cream);
+      padding: 120px 80px;
+    }
+
+    .flow-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 64px;
+      position: relative;
+    }
+
+    .flow-steps::before {
+      content: '';
+      position: absolute;
+      left: 31px;
+      top: 40px;
+      bottom: 40px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 40px;
+      padding: 32px 0;
+    }
+
+    .flow-step-num {
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      color: var(--gold);
+      background: var(--cream);
+      position: relative;
+      z-index: 1;
+    }
+
+    .flow-step-content { padding-top: 12px; }
+
+    .flow-step-title {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .flow-step-desc {
+      font-size: 13px;
+      line-height: 2.2;
+      color: var(--gray);
+      letter-spacing: 0.03em;
+    }
+
+    /* ===== Booking ===== */
+    #booking {
+      background: var(--black);
+      color: #fff;
+      padding: 120px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #booking::before {
+      content: 'BOOKING';
+      position: absolute;
+      right: -40px;
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 120px;
+      font-weight: 300;
+      color: rgba(200,169,110,0.04);
+      letter-spacing: 0.3em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .booking-inner {
+      max-width: 640px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .booking-inner .section-title { color: #fff; }
+    .booking-inner .section-title-jp { color: rgba(255,255,255,0.4); }
+
+    .booking-form {
+      margin-top: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .form-label .required {
+      color: var(--gold);
+      margin-left: 4px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 14px 16px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      transition: border-color 0.3s;
+      outline: none;
+      width: 100%;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--gold);
+      background: rgba(200,169,110,0.04);
+    }
+
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+
+    .form-select {
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .form-select option { background: var(--dark); }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-note {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.8;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 18px;
+      background: var(--gold);
+      color: var(--black);
+      font-size: 12px;
+      letter-spacing: 0.3em;
+      font-weight: 400;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .btn-submit:hover {
+      background: var(--gold-lt);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(200,169,110,0.3);
+    }
+
+    /* ===== FAQ ===== */
+    #faq {
+      background: var(--ivory);
+      padding: 120px 80px;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin-top: 64px;
+    }
+
+    .faq-item {
+      padding: 32px 40px;
+      background: var(--cream);
+      border: 1px solid transparent;
+      transition: border-color 0.3s;
+      cursor: default;
+    }
+
+    .faq-item:hover { border-color: rgba(200,169,110,0.3); }
+
+    .faq-q {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .faq-q::before {
+      content: 'Q.';
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .faq-a {
+      font-size: 12px;
+      line-height: 2.2;
+      color: var(--gray);
+      padding-left: 28px;
+      letter-spacing: 0.03em;
+    }
+
+    /* ===== Access ===== */
+    #access {
+      background: var(--dark);
+      color: #fff;
+      padding: 120px 80px;
+    }
+
+    .access-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      margin-top: 64px;
+    }
+
+    .access-info { display: flex; flex-direction: column; gap: 28px; }
+
+    .access-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .access-item-label {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+    }
+
+    .access-item-value {
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.05em;
+    }
+
+    .access-hours {
+      margin-top: 8px;
+      padding: 24px;
+      border: 1px solid rgba(200,169,110,0.2);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .access-hour-item { display: flex; flex-direction: column; gap: 4px; }
+
+    .access-hour-day {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .access-hour-time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 300;
+      color: #fff;
+    }
+
+    .access-map {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(200,169,110,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .access-map-placeholder {
+      text-align: center;
+    }
+
+    .access-map-placeholder .icon {
+      font-size: 48px;
+      color: rgba(200,169,110,0.3);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .access-map-placeholder p {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .access-map iframe {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      border: none;
+      filter: grayscale(60%) brightness(0.7);
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      background: var(--black);
+      padding: 80px;
+      border-top: 1px solid rgba(200,169,110,0.15);
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 64px;
+      padding-bottom: 64px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 40px;
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+    }
+
+    .footer-logo span {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      color: rgba(255,255,255,0.3);
+      margin-top: 4px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 300;
+    }
+
+    .footer-tagline {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.3);
+      margin-top: 16px;
+      max-width: 280px;
+      line-height: 2;
+    }
+
+    .footer-nav-group h4 {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .footer-nav-group ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .footer-nav-group ul a {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.4);
+      transition: color 0.3s;
+    }
+
+    .footer-nav-group ul a:hover { color: var(--gold); }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copy {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.2);
+    }
+
+    .footer-sns {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-sns a {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      transition: all 0.3s;
+    }
+
+    .footer-sns a:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* ===== Animations ===== */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== Mobile Menu ===== */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(15,15,15,0.97);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+    }
+
+    .mobile-menu.open { display: flex; }
+
+    .mobile-menu a {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      transition: color 0.3s;
+    }
+
+    .mobile-menu a:hover { color: var(--gold); }
+
+    .mobile-close {
+      position: absolute;
+      top: 28px;
+      right: 48px;
+      font-size: 24px;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      background: none;
+      border: none;
+      letter-spacing: 0;
+      transition: color 0.3s;
+    }
+
+    .mobile-close:hover { color: var(--gold); }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      nav, section, #numbers { padding-left: 48px; padding-right: 48px; }
+      nav.scrolled { padding-left: 48px; padding-right: 48px; }
+      footer { padding: 64px 48px; }
+      #hero .hero-content { padding: 0 48px; }
+      #hero .hero-scroll { left: 48px; }
+      #concept { padding: 80px 48px; }
+      .services-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+
+      nav { padding: 20px 24px; }
+      nav.scrolled { padding: 16px 24px; }
+
+      .hero-content { padding: 0 24px !important; }
+      .hero-scroll { left: 24px !important; }
+
+      #numbers {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 40px 24px;
+      }
+
+      .number-item:nth-child(2) { border-right: none; }
+      .number-item:nth-child(3) { border-right: 1px solid rgba(200,169,110,0.1); border-top: 1px solid rgba(200,169,110,0.1); }
+      .number-item:nth-child(4) { border-right: none; border-top: 1px solid rgba(200,169,110,0.1); }
+
+      section { padding: 80px 24px; }
+      #concept {
+        grid-template-columns: 1fr;
+        padding: 80px 24px;
+        gap: 48px;
+      }
+
+      .concept-visual-badge { right: 16px; }
+      .concept-text { padding-left: 0; }
+
+      .services-grid { grid-template-columns: 1fr; }
+      .services-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+
+      .form-row { grid-template-columns: 1fr; }
+
+      .faq-grid { grid-template-columns: 1fr; }
+
+      .access-grid { grid-template-columns: 1fr; gap: 48px; }
+
+      footer { padding: 48px 24px; }
+      .footer-top { flex-direction: column; gap: 48px; }
+      .footer-bottom { flex-direction: column; gap: 20px; align-items: flex-start; }
+
+      #booking::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo">
+    MIGAQ
+    <span>印象改善サロン</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#concept">CONCEPT</a></li>
+    <li><a href="#services">SERVICE</a></li>
+    <li><a href="#flow">FLOW</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#access">ACCESS</a></li>
+  </ul>
+  <a href="#booking" class="nav-cta">BOOK NOW</a>
+  <button class="hamburger" id="hamburgerBtn" aria-label="メニューを開く">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" id="mobileClose">✕</button>
+  <a href="#concept" class="mobile-link">Concept</a>
+  <a href="#services" class="mobile-link">Service</a>
+  <a href="#flow" class="mobile-link">Flow</a>
+  <a href="#faq" class="mobile-link">FAQ</a>
+  <a href="#access" class="mobile-link">Access</a>
+  <a href="#booking" class="mobile-link" style="color: var(--gold);">Book Now</a>
+</div>
+
+<!-- Hero -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-line"></div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow fade-up">IMPRESSION IMPROVEMENT SALON</p>
+    <h1 class="hero-title fade-up">
+      MI<span class="gold">GA</span>Q
+    </h1>
+    <p class="hero-subtitle-jp fade-up">印象を、磨く。</p>
+    <p class="hero-desc fade-up">
+      あなたの第一印象は、あなた自身が思う以上に多くを語っています。<br>
+      MIGAQは、笑顔・表情・清潔感・立ち居振る舞いを<br>
+      トータルにアプローチし、本来の魅力を引き出すサロンです。
+    </p>
+    <div class="hero-actions fade-up">
+      <a href="#booking" class="btn-primary">
+        予約する
+        <svg width="16" height="8" viewBox="0 0 16 8" fill="none"><path d="M0 4h14M11 1l3 3-3 3" stroke="currentColor" stroke-width="1"/></svg>
+      </a>
+      <a href="#services" class="btn-outline">メニューを見る</a>
+    </div>
+  </div>
+
+  <div class="hero-scroll">
+    <span class="hero-scroll-line"></span>
+    SCROLL
+  </div>
+</section>
+
+<!-- Numbers -->
+<div id="numbers">
+  <div class="number-item fade-up">
+    <div class="number-value">98<span class="number-unit">%</span></div>
+    <div class="number-label">顧客満足度</div>
+  </div>
+  <div class="number-item fade-up">
+    <div class="number-value">500<span class="number-unit">+</span></div>
+    <div class="number-label">施術実績</div>
+  </div>
+  <div class="number-item fade-up">
+    <div class="number-value">3<span class="number-unit">年</span></div>
+    <div class="number-label">の実績</div>
+  </div>
+  <div class="number-item fade-up">
+    <div class="number-value">4<span class="number-unit">種</span></div>
+    <div class="number-label">専門メニュー</div>
+  </div>
+</div>
+
+<!-- Concept -->
+<section id="concept">
+  <div class="concept-visual fade-up">
+    <div class="concept-visual-inner">
+      <span class="concept-visual-text">M</span>
+    </div>
+    <div class="concept-visual-badge">
+      <span class="num">No.1</span>
+      <span class="txt">IMPRESSION</span>
+    </div>
+  </div>
+
+  <div class="concept-text fade-up">
+    <p class="section-eyebrow">OUR CONCEPT</p>
+    <h2 class="section-title">印象改善という<br>新しい美容</h2>
+    <p class="section-title-jp">あなたの魅力を、最大限に。</p>
+    <div class="section-divider"></div>
+
+    <div class="concept-body">
+      <p>人は出会った瞬間の「第一印象」で、相手の多くを判断します。その印象をつくるのは、生まれ持った容姿だけではありません。</p>
+      <p>笑顔の輝き、表情のゆたかさ、肌のツヤ、立ち居振る舞い——これらは、正しいアプローチによって、誰でも確実に磨くことができます。</p>
+      <p>MIGAQは「磨く（みがく）」という言葉に込めたように、あなた本来の輝きを引き出すための専門サロンです。</p>
+    </div>
+
+    <div class="concept-philosophy">
+      <p>「人は磨けば磨くほど、<br>本物の輝きを放つ。」</p>
+    </div>
+  </div>
+</section>
+
+<!-- Services -->
+<section id="services">
+  <div class="services-header fade-up">
+    <div>
+      <p class="section-eyebrow" style="color: var(--gold);">OUR SERVICES</p>
+      <h2 class="section-title" style="color: #fff;">専門メニュー</h2>
+      <p class="section-title-jp">Service Menu</p>
+    </div>
+    <a href="#booking" class="btn-outline" style="color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.15);">全メニューを予約</a>
+  </div>
+
+  <div class="services-grid">
+    <div class="service-card fade-up">
+      <div class="service-number">01</div>
+      <div class="service-icon">✦</div>
+      <p class="service-name">ホワイトニング</p>
+      <p class="service-name-en">WHITENING</p>
+      <p class="service-desc">歯の白さは笑顔の印象を大きく左右します。専用ジェルと光照射により、透明感のある白い歯へ。痛みが少なく、1回でも効果を実感できます。</p>
+      <div class="service-price">
+        <span class="service-price-label">PRICE FROM</span>
+        <span class="service-price-value">¥8,000<span> ~</span></span>
+      </div>
+    </div>
+
+    <div class="service-card fade-up">
+      <div class="service-number">02</div>
+      <div class="service-icon">◈</div>
+      <p class="service-name">表情筋トレーニング</p>
+      <p class="service-name-en">FACIAL TRAINING</p>
+      <p class="service-desc">豊かな表情は、表情筋の柔軟性から生まれます。プロの指導のもと、自然で魅力的な笑顔・表情をつくる筋肉の使い方を習得します。</p>
+      <div class="service-price">
+        <span class="service-price-label">PRICE FROM</span>
+        <span class="service-price-value">¥12,000<span> ~</span></span>
+      </div>
+    </div>
+
+    <div class="service-card fade-up">
+      <div class="service-number">03</div>
+      <div class="service-icon">◇</div>
+      <p class="service-name">印象分析カウンセリング</p>
+      <p class="service-name-en">IMPRESSION ANALYSIS</p>
+      <p class="service-desc">現在のあなたの第一印象を客観的に分析。改善ポイントを明確にし、目標に合わせたパーソナルプランを設計します。まず受けてほしい入門メニュー。</p>
+      <div class="service-price">
+        <span class="service-price-label">PRICE FROM</span>
+        <span class="service-price-value">¥5,000<span> ~</span></span>
+      </div>
+    </div>
+
+    <div class="service-card fade-up">
+      <div class="service-number">04</div>
+      <div class="service-icon">✧</div>
+      <p class="service-name">トータル印象改善プラン</p>
+      <p class="service-name-en">TOTAL PLAN</p>
+      <p class="service-desc">ホワイトニング・表情筋・立ち居振る舞いをすべて含む、総合的な印象改善コース。就活・婚活・ビジネスシーンに向けた方に特に人気のプランです。</p>
+      <div class="service-price">
+        <span class="service-price-label">PRICE FROM</span>
+        <span class="service-price-value">¥30,000<span> ~</span></span>
+      </div>
+    </div>
+
+    <div class="service-card fade-up" style="grid-column: span 2; background: rgba(200,169,110,0.04);">
+      <div class="service-number" style="position: absolute; right: 40px; top: 40px; font-size: 80px; color: rgba(200,169,110,0.08);">05</div>
+      <div class="service-icon">★</div>
+      <p class="service-name">セルフケア指導</p>
+      <p class="service-name-en">SELF CARE COACHING</p>
+      <p class="service-desc" style="max-width: 560px;">サロン来店後も効果を持続・向上させるための、ご自宅でできるセルフケア方法をお伝えします。毎日の習慣が、あなたの印象を継続的に磨き続けます。</p>
+      <div class="service-price" style="max-width: 280px;">
+        <span class="service-price-label">ADD-ON</span>
+        <span class="service-price-value">¥3,000<span> ~</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Flow -->
+<section id="flow">
+  <div class="flow-container">
+    <div class="fade-up">
+      <p class="section-eyebrow">HOW IT WORKS</p>
+      <h2 class="section-title">ご来店の流れ</h2>
+      <p class="section-title-jp">Visit Flow</p>
+    </div>
+
+    <div class="flow-steps">
+      <div class="flow-step fade-up">
+        <div class="flow-step-num">01</div>
+        <div class="flow-step-content">
+          <p class="flow-step-title">ご予約</p>
+          <p class="flow-step-desc">このページのフォーム・またはお電話にてご予約ください。ご希望のメニュー・日時をお知らせください。初めての方はまず「印象分析カウンセリング」がおすすめです。</p>
+        </div>
+      </div>
+
+      <div class="flow-step fade-up">
+        <div class="flow-step-num">02</div>
+        <div class="flow-step-content">
+          <p class="flow-step-title">カウンセリング</p>
+          <p class="flow-step-desc">ご来店後、まずカウンセリングシートにご記入いただきます。現在のお悩みや目標をお聞きし、最適なプランをご提案します。</p>
+        </div>
+      </div>
+
+      <div class="flow-step fade-up">
+        <div class="flow-step-num">03</div>
+        <div class="flow-step-content">
+          <p class="flow-step-title">施術・トレーニング</p>
+          <p class="flow-step-desc">カウンセリング内容に基づき、施術またはトレーニングを行います。担当スタッフが丁寧に対応いたします。所要時間はメニューによって異なります（60〜120分程度）。</p>
+        </div>
+      </div>
+
+      <div class="flow-step fade-up">
+        <div class="flow-step-num">04</div>
+        <div class="flow-step-content">
+          <p class="flow-step-title">アフターフォロー</p>
+          <p class="flow-step-desc">施術後のセルフケア方法をお伝えし、次回プランのご相談も承ります。LINEでのアフターフォローも実施中です。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Booking -->
+<section id="booking">
+  <div class="booking-inner fade-up">
+    <p class="section-eyebrow" style="color: var(--gold);">RESERVATION</p>
+    <h2 class="section-title" style="color: #fff;">ご予約</h2>
+    <p class="section-title-jp">Book an Appointment</p>
+
+    <form class="booking-form" id="bookingForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">お名前<span class="required">*</span></label>
+          <input type="text" class="form-input" placeholder="山田 花子" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">電話番号<span class="required">*</span></label>
+          <input type="tel" class="form-input" placeholder="090-0000-0000" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">メールアドレス</label>
+        <input type="email" class="form-input" placeholder="example@email.com">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">ご希望メニュー<span class="required">*</span></label>
+          <select class="form-select" required>
+            <option value="" disabled selected>メニューを選択</option>
+            <option>印象分析カウンセリング ¥5,000〜</option>
+            <option>ホワイトニング ¥8,000〜</option>
+            <option>表情筋トレーニング ¥12,000〜</option>
+            <option>トータル印象改善プラン ¥30,000〜</option>
+            <option>セルフケア指導（オプション追加）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ご希望日時<span class="required">*</span></label>
+          <input type="datetime-local" class="form-input" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ご要望・ご質問</label>
+        <textarea class="form-textarea" placeholder="初めてのご来店のため、どのメニューが合うか相談したいです。など..."></textarea>
+      </div>
+
+      <p class="form-note">
+        ※ ご予約確認のため、折り返しご連絡させていただく場合がございます。<br>
+        ※ 当日のキャンセルはお控えいただけますようお願いいたします。
+      </p>
+
+      <button type="submit" class="btn-submit">
+        予約リクエストを送る
+        <svg width="16" height="8" viewBox="0 0 16 8" fill="none"><path d="M0 4h14M11 1l3 3-3 3" stroke="currentColor" stroke-width="1"/></svg>
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="fade-up">
+    <p class="section-eyebrow">FAQ</p>
+    <h2 class="section-title">よくある質問</h2>
+    <p class="section-title-jp">Frequently Asked Questions</p>
+  </div>
+
+  <div class="faq-grid">
+    <div class="faq-item fade-up">
+      <p class="faq-q">初めてですが、どのメニューを選べばよいですか？</p>
+      <p class="faq-a">はじめての方には「印象分析カウンセリング」をおすすめしています。現在の印象を客観的に分析し、あなたに最適なプランをご提案します。</p>
+    </div>
+
+    <div class="faq-item fade-up">
+      <p class="faq-q">ホワイトニングは痛みがありますか？</p>
+      <p class="faq-a">使用するジェルは低刺激タイプですが、まれに施術中に軽いしみる感覚を感じる方もいます。知覚過敏をお持ちの方は事前にお申し出ください。</p>
+    </div>
+
+    <div class="faq-item fade-up">
+      <p class="faq-q">男性でも利用できますか？</p>
+      <p class="faq-a">はい、もちろんご利用いただけます。就活・営業・ビジネスシーンでの印象改善を目的とした男性のお客様も多くいらっしゃいます。</p>
+    </div>
+
+    <div class="faq-item fade-up">
+      <p class="faq-q">効果はどのくらいで出ますか？</p>
+      <p class="faq-a">ホワイトニングは初回施術から変化を実感される方が多いです。表情筋トレーニングは継続（3〜5回程度）で自然な表情の変化が現れます。</p>
+    </div>
+
+    <div class="faq-item fade-up">
+      <p class="faq-q">予約はどうすればよいですか？</p>
+      <p class="faq-a">このページのフォームまたはお電話にてご予約いただけます。ご希望のメニュー・日時をお伝えください。</p>
+    </div>
+
+    <div class="faq-item fade-up">
+      <p class="faq-q">駐車場はありますか？</p>
+      <p class="faq-a">お近くにコインパーキングがございます。詳細は予約確定後にご案内いたします。公共交通機関のご利用が便利です。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Access -->
+<section id="access">
+  <div class="fade-up">
+    <p class="section-eyebrow" style="color: var(--gold);">ACCESS</p>
+    <h2 class="section-title" style="color: #fff;">アクセス</h2>
+    <p class="section-title-jp" style="color: rgba(255,255,255,0.4);">Salon Location</p>
+  </div>
+
+  <div class="access-grid">
+    <div class="access-info fade-up">
+      <div class="access-item">
+        <span class="access-item-label">SALON NAME</span>
+        <span class="access-item-value">MIGAQ 印象改善サロン</span>
+      </div>
+      <div class="access-item">
+        <span class="access-item-label">ADDRESS</span>
+        <span class="access-item-value">〒000-0000<br>お問い合わせの際にお知らせします</span>
+      </div>
+      <div class="access-item">
+        <span class="access-item-label">TEL</span>
+        <span class="access-item-value">予約フォームよりお問い合わせください</span>
+      </div>
+      <div class="access-item">
+        <span class="access-item-label">BUSINESS HOURS</span>
+        <div class="access-hours">
+          <div class="access-hour-item">
+            <span class="access-hour-day">平日 Mon–Fri</span>
+            <span class="access-hour-time">10:00 – 20:00</span>
+          </div>
+          <div class="access-hour-item">
+            <span class="access-hour-day">土日祝 Sat–Sun</span>
+            <span class="access-hour-time">10:00 – 18:00</span>
+          </div>
+          <div class="access-hour-item">
+            <span class="access-hour-day">定休日</span>
+            <span class="access-hour-time">毎週火曜日</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="access-map fade-up">
+      <div class="access-map-placeholder">
+        <span class="icon">◎</span>
+        <p>MAP</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-logo">
+        MIGAQ
+        <span>印象改善サロン</span>
+      </div>
+      <p class="footer-tagline">あなたの第一印象を磨き、<br>本来の輝きを引き出すサロン。</p>
+    </div>
+
+    <div style="display: flex; gap: 64px;">
+      <div class="footer-nav-group">
+        <h4>MENU</h4>
+        <ul>
+          <li><a href="#concept">コンセプト</a></li>
+          <li><a href="#services">メニュー</a></li>
+          <li><a href="#flow">ご来店の流れ</a></li>
+          <li><a href="#faq">よくある質問</a></li>
+          <li><a href="#access">アクセス</a></li>
+        </ul>
+      </div>
+      <div class="footer-nav-group">
+        <h4>SERVICE</h4>
+        <ul>
+          <li><a href="#services">ホワイトニング</a></li>
+          <li><a href="#services">表情筋トレーニング</a></li>
+          <li><a href="#services">印象分析</a></li>
+          <li><a href="#services">トータルプラン</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-copy">© 2026 MIGAQ. All Rights Reserved.</p>
+    <div class="footer-sns">
+      <a href="#" aria-label="Instagram">ig</a>
+      <a href="#" aria-label="LINE">ln</a>
+      <a href="#" aria-label="Twitter/X">𝕏</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Mobile menu
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const mobileClose = document.getElementById('mobileClose');
+  const mobileLinks = document.querySelectorAll('.mobile-link');
+
+  hamburgerBtn.addEventListener('click', () => mobileMenu.classList.add('open'));
+  mobileClose.addEventListener('click', () => mobileMenu.classList.remove('open'));
+  mobileLinks.forEach(link => {
+    link.addEventListener('click', () => mobileMenu.classList.remove('open'));
+  });
+
+  // Fade-up animations
+  const fadeEls = document.querySelectorAll('.fade-up');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  fadeEls.forEach(el => observer.observe(el));
+
+  // Form submit
+  document.getElementById('bookingForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('.btn-submit');
+    btn.textContent = '送信しました ✓';
+    btn.style.background = 'rgba(200,169,110,0.3)';
+    btn.style.color = 'var(--gold)';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.innerHTML = '予約リクエストを送る <svg width="16" height="8" viewBox="0 0 16 8" fill="none"><path d="M0 4h14M11 1l3 3-3 3" stroke="currentColor" stroke-width="1"/></svg>';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.disabled = false;
+      e.target.reset();
+    }, 3000);
+  });
+</script>
+</body>
+</html>
