@@ -1,768 +1,482 @@
 'use client';
 
-import {
-  useState,
-  useRef,
-  useCallback,
-  ChangeEvent,
-} from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ConsentFormData, RiskLevel } from '@/types/consent';
-import { TREATMENT_OPTIONS } from '@/types/consent';
-import { generateRisk, RISK_LABEL } from '@/lib/riskGenerator';
-import { supabase, uploadFile, dataUrlToBlob } from '@/lib/supabase';
 import SignaturePad, { type SignaturePadRef } from '@/components/SignaturePad';
+import { generateRisk, RISK_LABEL, type RiskLevel } from '@/lib/riskGenerator';
 
-const TOTAL_STEPS = 5;
+// ─── フォームの型 ─────────────────────────────────────────────────────────────
 
-const defaultForm: ConsentFormData = {
-  customerName: '',
-  customerPhone: '',
+interface Form {
+  customerName: string;
+  customerPhone: string;
+  treatmentDate: string;
+  stylistName: string;
+  requestedTreatment: string;
+  hasBlackDye: boolean;
+  blackDyeMonths: string;
+  hasBleach: boolean;
+  bleachMonths: string;
+  hasStraightening: boolean;
+  straighteningMonths: string;
+  riskLevel: RiskLevel;
+  riskItems: string[];
+  consentRisk: boolean;
+  consentNoClaim: boolean;
+  consentHistory: boolean;
+}
+
+const INIT: Form = {
+  customerName: '', customerPhone: '',
   treatmentDate: new Date().toISOString().split('T')[0],
-  stylistName: '',
-  requestedTreatment: '',
-  history: {
-    hasBlackDye: false,
-    blackDyeMonthsAgo: '',
-    blackDyeTimes: '',
-    blackDyeDetails: '',
-    hasBleach: false,
-    bleachMonthsAgo: '',
-    bleachTimes: '',
-    bleachDetails: '',
-    hasStraightening: false,
-    straighteningMonthsAgo: '',
-    straighteningTimes: '',
-    straighteningDetails: '',
-    hasOtherChemical: false,
-    otherChemicalDetails: '',
-  },
-  riskLevel: 'low',
-  riskItems: [],
-  consents: {
-    understoodRisk: false,
-    noClaim: false,
-    accurateHistory: false,
-    photoConsent: false,
-    contactPermission: false,
-  },
+  stylistName: '', requestedTreatment: '',
+  hasBlackDye: false, blackDyeMonths: '',
+  hasBleach: false, bleachMonths: '',
+  hasStraightening: false, straighteningMonths: '',
+  riskLevel: 'low', riskItems: [],
+  consentRisk: false, consentNoClaim: false, consentHistory: false,
 };
 
-// ─── Step indicator ──────────────────────────────────────────────────────────
-function StepBar({ current }: { current: number }) {
-  const labels = ['お客様情報', '施術内容', '施術履歴', 'リスク確認', '電子署名'];
+const TREATMENTS = [
+  'カット', 'カラー（全体）', 'カラー（リタッチ）',
+  'ブリーチ（全体）', 'ブリーチ（ハイライト）',
+  'パーマ', '縮毛矯正', 'トリートメント', 'その他',
+];
+
+// ─── 小コンポーネント ─────────────────────────────────────────────────────────
+
+/** あり / なし トグル */
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="px-4 pt-6 pb-4">
-      <div className="flex items-center gap-1 mb-2">
-        {labels.map((_, i) => (
-          <div
-            key={i}
-            className={`step-indicator ${
-              i + 1 <= current ? 'bg-ink' : 'bg-border'
-            }`}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between">
-        {labels.map((label, i) => (
-          <span
-            key={i}
-            className={`text-[9px] tracking-wider ${
-              i + 1 === current ? 'text-ink font-semibold' : 'text-zinc-300'
+    <div className="flex border border-[#E0E0E0] overflow-hidden shrink-0">
+      {(['あり', 'なし'] as const).map((label, i) => {
+        const active = i === 0 ? value : !value;
+        return (
+          <button
+            key={label}
+            type="button"
+            onClick={() => onChange(i === 0)}
+            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+              active ? 'bg-[#0A0A0A] text-white' : 'bg-white text-[#9E9E9E] hover:bg-[#F5F5F5]'
             }`}
           >
             {label}
-          </span>
-        ))}
-      </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-// ─── Toggle Yes/No ───────────────────────────────────────────────────────────
-function YesNoToggle({
-  value,
-  onChange,
+/** チェックボックス行 */
+function Check({
+  checked, label, sub, onChange, required,
 }: {
-  value: boolean;
-  onChange: (v: boolean) => void;
+  checked: boolean; label: string; sub?: string;
+  onChange: (v: boolean) => void; required?: boolean;
 }) {
   return (
-    <div className="toggle-group w-32">
-      <button
-        type="button"
-        className={`toggle-btn ${value ? 'active' : ''}`}
-        onClick={() => onChange(true)}
-      >
-        あり
-      </button>
-      <button
-        type="button"
-        className={`toggle-btn ${!value ? 'active' : ''}`}
-        onClick={() => onChange(false)}
-      >
-        なし
-      </button>
-    </div>
-  );
-}
-
-// ─── History row ─────────────────────────────────────────────────────────────
-function HistoryRow({
-  label,
-  has,
-  monthsAgo,
-  times,
-  details,
-  onToggle,
-  onMonths,
-  onTimes,
-  onDetails,
-  detailPlaceholder,
-}: {
-  label: string;
-  has: boolean;
-  monthsAgo: string;
-  times: string;
-  details: string;
-  onToggle: (v: boolean) => void;
-  onMonths: (v: string) => void;
-  onTimes: (v: string) => void;
-  onDetails: (v: string) => void;
-  detailPlaceholder?: string;
-}) {
-  return (
-    <div className="border border-border p-4 animate-in">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold tracking-wide">{label}</span>
-        <YesNoToggle value={has} onChange={onToggle} />
-      </div>
-      {has && (
-        <div className="space-y-3 mt-3 pt-3 border-t border-border animate-in">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="section-label">何ヶ月前</div>
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="例: 6"
-                  value={monthsAgo}
-                  onChange={(e) => onMonths(e.target.value)}
-                  className="!py-2"
-                />
-                <span className="text-sm text-muted whitespace-nowrap ml-1">ヶ月前</span>
-              </div>
-            </div>
-            <div>
-              <div className="section-label">施術回数</div>
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="例: 2"
-                  value={times}
-                  onChange={(e) => onTimes(e.target.value)}
-                  className="!py-2"
-                />
-                <span className="text-sm text-muted whitespace-nowrap ml-1">回</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div className="section-label">詳細・メモ（任意）</div>
-            <input
-              type="text"
-              placeholder={detailPlaceholder || '詳細があればご記入ください'}
-              value={details}
-              onChange={(e) => onDetails(e.target.value)}
-              className="!py-2"
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Checkbox row ────────────────────────────────────────────────────────────
-function ConsentCheck({
-  checked,
-  label,
-  sub,
-  onChange,
-  required,
-}: {
-  checked: boolean;
-  label: string;
-  sub?: string;
-  onChange: (v: boolean) => void;
-  required?: boolean;
-}) {
-  return (
-    <label className="flex items-start gap-3 cursor-pointer py-3.5 border-b border-border last:border-0 active:bg-zinc-50">
-      <div
-        className={`w-5 h-5 flex-shrink-0 border mt-0.5 flex items-center justify-center transition-colors ${
-          checked ? 'bg-ink border-ink' : 'bg-white border-border'
+    <label
+      className="flex items-start gap-3 py-4 border-b border-[#F0F0F0] last:border-0 cursor-pointer active:bg-[#FAFAFA]"
+      onClick={() => onChange(!checked)}
+    >
+      <span
+        className={`mt-0.5 w-5 h-5 shrink-0 border flex items-center justify-center transition-colors ${
+          checked ? 'bg-[#0A0A0A] border-[#0A0A0A]' : 'bg-white border-[#D0D0D0]'
         }`}
-        onClick={() => onChange(!checked)}
       >
         {checked && (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
-      </div>
-      <div className="flex-1 min-w-0" onClick={() => onChange(!checked)}>
-        <div className="text-sm leading-snug">
-          {required && <span className="text-risk-high mr-1">*</span>}
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="text-sm leading-snug block">
+          {required && <span className="text-[#B71C1C] mr-1">*</span>}
           {label}
-        </div>
-        {sub && <div className="text-xs text-muted mt-0.5 leading-relaxed">{sub}</div>}
-      </div>
+        </span>
+        {sub && <span className="text-xs text-[#9E9E9E] mt-0.5 block leading-relaxed">{sub}</span>}
+      </span>
     </label>
   );
 }
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+/** 入力ラベル */
+function Label({ text, required }: { text: string; required?: boolean }) {
+  return (
+    <div className="text-[10px] tracking-[3px] text-[#9E9E9E] mb-1.5 uppercase">
+      {text}{required && <span className="text-[#B71C1C] ml-1">*</span>}
+    </div>
+  );
+}
+
+// ─── メインページ ─────────────────────────────────────────────────────────────
+
 export default function ConsentPage() {
-  const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState<ConsentFormData>(defaultForm);
-  const [imgPreview, setImgPreview] = useState<string | null>(null);
-  const [isSigning, setIsSigning] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
-  const sigRef = useRef<SignaturePadRef>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const router    = useRouter();
+  const sigRef    = useRef<SignaturePadRef>(null);
+  const [step, setStep]     = useState(1);
+  const [form, setForm]     = useState<Form>(INIT);
+  const [signed, setSigned] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
 
-  // ── helpers ────────────────────────────────────────────────────────────────
-  const upd = useCallback((patch: Partial<ConsentFormData>) => {
-    setForm((f) => ({ ...f, ...patch }));
-  }, []);
+  const set = (p: Partial<Form>) => setForm(f => ({ ...f, ...p }));
 
-  const updHistory = useCallback(
-    (patch: Partial<ConsentFormData['history']>) => {
-      setForm((f) => ({ ...f, history: { ...f.history, ...patch } }));
-    },
-    []
-  );
-
-  const updConsent = useCallback(
-    (patch: Partial<ConsentFormData['consents']>) => {
-      setForm((f) => ({ ...f, consents: { ...f.consents, ...patch } }));
-    },
-    []
-  );
-
-  // ── step validation ────────────────────────────────────────────────────────
-  function canProceed(): boolean {
-    if (step === 1) {
-      return (
-        form.customerName.trim() !== '' &&
-        form.stylistName.trim() !== '' &&
-        form.treatmentDate !== ''
-      );
-    }
-    if (step === 2) {
-      return form.requestedTreatment !== '';
-    }
-    if (step === 4) {
-      const { understoodRisk, noClaim, accurateHistory } = form.consents;
-      return understoodRisk && noClaim && accurateHistory;
-    }
-    return true;
+  // step2 → step3 でリスク自動計算
+  function enterStep3() {
+    const { level, items } = generateRisk(
+      form.hasBlackDye,    parseInt(form.blackDyeMonths)    || 99,
+      form.hasBleach,      parseInt(form.bleachMonths)      || 99,
+      form.hasStraightening, parseInt(form.straighteningMonths) || 99,
+      form.requestedTreatment
+    );
+    set({ riskLevel: level, riskItems: items });
+    setStep(3);
   }
 
-  // ── step 3 → 4 transition: compute risk ───────────────────────────────────
-  function goToRisk() {
-    const { level, items } = generateRisk(form.history, form.requestedTreatment);
-    upd({ riskLevel: level, riskItems: items });
-    setStep(4);
-  }
+  // バリデーション
+  const step1OK = form.customerName.trim() && form.treatmentDate && form.stylistName.trim() && form.requestedTreatment;
+  const step3OK = form.consentRisk && form.consentNoClaim && form.consentHistory;
 
-  // ── image upload ───────────────────────────────────────────────────────────
-  function handleImageSelect(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    upd({ referenceImageFile: file });
-    const reader = new FileReader();
-    reader.onload = (ev) => setImgPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  }
-
-  // ── submit ─────────────────────────────────────────────────────────────────
+  // 送信
   async function handleSubmit() {
-    if (sigRef.current?.isEmpty()) {
-      setError('署名を記入してください。');
+    if (!sigRef.current || sigRef.current.isEmpty()) {
+      setError('署名を記入してください');
       return;
     }
     setError('');
-    setIsSaving(true);
-
+    setSaving(true);
     try {
-      const timestamp = Date.now();
-      let referenceImageUrl: string | undefined;
-      let signatureUrl: string | undefined;
-      let pdfUrl: string | undefined;
-      let gdriveUrl: string | undefined;
+      const sigDataUrl = sigRef.current.getDataUrl();
 
-      // 1. Upload reference image
-      if (form.referenceImageFile) {
-        const ext = form.referenceImageFile.name.split('.').pop() ?? 'jpg';
-        referenceImageUrl =
-          (await uploadFile(
-            'consent-images',
-            `${timestamp}-ref.${ext}`,
-            form.referenceImageFile,
-            form.referenceImageFile.type
-          )) ?? undefined;
-      }
-
-      // 2. Upload signature
-      const sigDataUrl = sigRef.current!.getDataUrl();
-      const sigBlob = await dataUrlToBlob(sigDataUrl);
-      signatureUrl =
-        (await uploadFile(
-          'consent-signatures',
-          `${timestamp}-sig.png`,
-          sigBlob,
-          'image/png'
-        )) ?? undefined;
-
-      const finalForm: ConsentFormData = {
-        ...form,
-        referenceImageUrl,
-        signatureDataUrl: sigDataUrl,
-      };
-
-      // 3. Generate + upload PDF
-      const { generateConsentPDF } = await import('@/lib/pdfGenerator');
-      const pdfBlob = await generateConsentPDF(finalForm);
-      pdfUrl =
-        (await uploadFile(
-          'consent-pdfs',
-          `${timestamp}-consent.pdf`,
-          pdfBlob,
-          'application/pdf'
-        )) ?? undefined;
-
-      // 4. Save to Google Drive (optional — won't fail if unconfigured)
-      try {
-        const fd = new FormData();
-        fd.append('file', pdfBlob, 'consent.pdf');
-        fd.append(
-          'filename',
-          `${form.treatmentDate}_${form.customerName}_同意書.pdf`
-        );
-        const driveRes = await fetch('/api/gdrive', { method: 'POST', body: fd });
-        if (driveRes.ok) {
-          const driveData = await driveRes.json();
-          gdriveUrl = driveData.url;
-        }
-      } catch {
-        // Google Drive is optional — ignore errors
-      }
-
-      // 5. Save to Supabase DB
-      const saveRes = await fetch('/api/consent', {
+      // 1. Supabase保存
+      const res = await fetch('/api/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...finalForm,
-          signatureUrl,
-          pdfUrl,
-          gdriveUrl,
-        }),
+        body: JSON.stringify({ ...form, signatureDataUrl: sigDataUrl }),
       });
+      if (!res.ok) throw new Error('save failed');
 
-      if (!saveRes.ok) throw new Error('DB save failed');
-      const saveData = await saveRes.json();
+      // 2. PDF生成（動的インポートでバンドルサイズ最適化）
+      const { generatePDF } = await import('@/lib/pdfGenerator');
+      const blob = await generatePDF({ ...form, signatureDataUrl: sigDataUrl });
 
-      // 6. Download PDF for stylist
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(pdfBlob);
-      link.download = `${form.treatmentDate}_${form.customerName}_同意書.pdf`;
-      link.click();
+      // 3. PDFダウンロード
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = `${form.treatmentDate}_${form.customerName}_同意書.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
 
-      router.push(
-        `/consent/complete?name=${encodeURIComponent(form.customerName)}&id=${saveData.id}&gdrive=${encodeURIComponent(gdriveUrl ?? '')}&pdf=${encodeURIComponent(pdfUrl ?? '')}`
-      );
-    } catch (err) {
-      console.error(err);
-      setError('保存中にエラーが発生しました。もう一度お試しください。');
+      router.push(`/consent/complete?name=${encodeURIComponent(form.customerName)}`);
+    } catch {
+      setError('保存に失敗しました。もう一度お試しください。');
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   }
 
-  // ── Risk badge ─────────────────────────────────────────────────────────────
-  function RiskBadge({ level }: { level: RiskLevel }) {
-    const cls: Record<RiskLevel, string> = {
-      low: 'border-risk-low text-risk-low',
-      medium: 'border-risk-medium text-risk-medium',
-      high: 'border-risk-high text-risk-high bg-red-50',
-    };
-    return (
-      <span
-        className={`border text-xs px-3 py-1 font-bold tracking-widest ${cls[level]}`}
-      >
-        {RISK_LABEL[level]}
-      </span>
-    );
-  }
+  // リスクバッジの色
+  const riskStyle: Record<RiskLevel, string> = {
+    low:    'border-[#2E7D32] text-[#2E7D32]',
+    medium: 'border-[#E65100] text-[#E65100]',
+    high:   'border-[#B71C1C] text-[#B71C1C] bg-red-50',
+  };
+  const riskBorder: Record<RiskLevel, string> = {
+    low:    'border-l-[#2E7D32]',
+    medium: 'border-l-[#E65100]',
+    high:   'border-l-[#B71C1C]',
+  };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-paper">
-      {/* Header */}
-      <header className="bg-white border-b border-border sticky top-0 z-20">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="text-[9px] tracking-[4px] text-muted">MIGAQ IMPRESSION SALON</div>
-            <div className="text-base font-serif font-semibold tracking-wide">施術同意書</div>
+    <div className="min-h-screen bg-[#FAFAFA]">
+
+      {/* ── ヘッダー ── */}
+      <header className="bg-white border-b border-[#E8E8E8] sticky top-0 z-20">
+        <div className="max-w-lg mx-auto px-5 pt-4 pb-3">
+          <div className="text-[9px] tracking-[5px] text-[#BBBBBB] mb-0.5">MIGAQ IMPRESSION SALON</div>
+          <div className="font-serif text-[17px] font-semibold tracking-wider">施術同意書</div>
+        </div>
+
+        {/* ステップバー */}
+        <div className="max-w-lg mx-auto px-5 pb-3">
+          <div className="flex gap-1 mb-1.5">
+            {[1,2,3,4].map(i => (
+              <div key={i} className={`h-[2px] flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-[#0A0A0A]' : 'bg-[#E8E8E8]'}`} />
+            ))}
           </div>
-          <div className="text-xs text-muted">
-            {step} / {TOTAL_STEPS}
+          <div className="flex justify-between">
+            {['お客様情報', '施術履歴', 'リスク確認', '電子署名'].map((t, i) => (
+              <span key={t} className={`text-[9px] tracking-wide ${i + 1 === step ? 'text-[#0A0A0A] font-semibold' : 'text-[#D0D0D0]'}`}>
+                {t}
+              </span>
+            ))}
           </div>
         </div>
-        <StepBar current={step} />
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pb-32">
+      {/* ── メインコンテンツ ── */}
+      <main className="max-w-lg mx-auto px-5 pt-6 pb-32">
 
-        {/* ── STEP 1: お客様情報 ──────────────────────────────────────── */}
+        {/* ══ STEP 1: お客様情報 ══════════════════════════════════════ */}
         {step === 1 && (
-          <div className="space-y-5 pt-6 animate-in">
+          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
             <div>
-              <h2 className="font-serif text-xl font-semibold mb-1">お客様情報</h2>
-              <p className="text-xs text-muted">施術日・担当スタイリスト・お客様の基本情報を入力してください。</p>
+              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">お客様情報</h2>
+              <p className="text-xs text-[#9E9E9E]">担当スタイリストが入力します。</p>
             </div>
 
             <div>
-              <div className="section-label">お名前 <span className="text-risk-high">*</span></div>
+              <Label text="お名前" required />
               <input
-                type="text"
-                placeholder="山田 花子"
+                type="text" autoComplete="off" placeholder="山田 花子"
                 value={form.customerName}
-                onChange={(e) => upd({ customerName: e.target.value })}
-                autoComplete="name"
+                onChange={e => set({ customerName: e.target.value })}
+                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
               />
             </div>
 
             <div>
-              <div className="section-label">電話番号</div>
+              <Label text="電話番号" />
               <input
-                type="tel"
-                placeholder="090-0000-0000"
+                type="tel" autoComplete="tel" placeholder="090-0000-0000"
                 value={form.customerPhone}
-                onChange={(e) => upd({ customerPhone: e.target.value })}
-                autoComplete="tel"
+                onChange={e => set({ customerPhone: e.target.value })}
+                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
               />
             </div>
 
             <div>
-              <div className="section-label">施術日 <span className="text-risk-high">*</span></div>
+              <Label text="施術日" required />
               <input
                 type="date"
                 value={form.treatmentDate}
-                onChange={(e) => upd({ treatmentDate: e.target.value })}
+                onChange={e => set({ treatmentDate: e.target.value })}
+                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
               />
             </div>
 
             <div>
-              <div className="section-label">担当スタイリスト <span className="text-risk-high">*</span></div>
+              <Label text="担当スタイリスト" required />
               <input
-                type="text"
-                placeholder="担当者名"
+                type="text" autoComplete="off" placeholder="担当者名"
                 value={form.stylistName}
-                onChange={(e) => upd({ stylistName: e.target.value })}
+                onChange={e => set({ stylistName: e.target.value })}
+                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
               />
             </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: 施術内容 ──────────────────────────────────────── */}
-        {step === 2 && (
-          <div className="space-y-5 pt-6 animate-in">
-            <div>
-              <h2 className="font-serif text-xl font-semibold mb-1">施術内容</h2>
-              <p className="text-xs text-muted">ご希望の施術内容と参考画像をご確認ください。</p>
-            </div>
 
             <div>
-              <div className="section-label">施術メニュー <span className="text-risk-high">*</span></div>
+              <Label text="施術メニュー" required />
               <select
                 value={form.requestedTreatment}
-                onChange={(e) => upd({ requestedTreatment: e.target.value })}
+                onChange={e => set({ requestedTreatment: e.target.value })}
+                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors appearance-none"
               >
-                <option value="">施術を選択してください</option>
-                {TREATMENT_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                <option value="">選択してください</option>
+                {TREATMENTS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
+          </div>
+        )}
 
-            {form.requestedTreatment === 'その他' && (
-              <div className="animate-in">
-                <div className="section-label">施術内容（詳細）</div>
-                <input
-                  type="text"
-                  placeholder="施術内容を詳しく入力してください"
-                  value=""
-                  onChange={(e) => upd({ requestedTreatment: e.target.value })}
-                />
-              </div>
-            )}
-
+        {/* ══ STEP 2: 施術履歴 ══════════════════════════════════════ */}
+        {step === 2 && (
+          <div className="space-y-4 animate-[fadeIn_.25s_ease-out]">
             <div>
-              <div className="section-label">参考画像（任意）</div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelect}
-              />
-              {imgPreview ? (
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imgPreview}
-                    alt="参考画像"
-                    className="w-full max-h-64 object-contain border border-border bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImgPreview(null);
-                      upd({ referenceImageFile: undefined });
-                      if (fileRef.current) fileRef.current.value = '';
-                    }}
-                    className="absolute top-2 right-2 bg-ink text-white w-7 h-7 flex items-center justify-center text-xs"
-                  >
-                    ✕
-                  </button>
+              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">施術履歴</h2>
+              <p className="text-xs text-[#9E9E9E]">安全な施術のため、正確にお答えください。</p>
+            </div>
+
+            {/* 黒染め */}
+            <div className="bg-white border border-[#E0E0E0] p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">黒染め（ブラックカラー）</div>
+                  <div className="text-xs text-[#9E9E9E] mt-0.5">市販・サロン問わず</div>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="w-full border-2 border-dashed border-border py-10 flex flex-col items-center gap-2 hover:border-ink transition-colors"
-                >
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted">
-                    <rect x="3" y="3" width="18" height="18" rx="1" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span className="text-xs text-muted">タップして画像を選択</span>
-                </button>
+                <Toggle value={form.hasBlackDye} onChange={v => set({ hasBlackDye: v })} />
+              </div>
+              {form.hasBlackDye && (
+                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
+                  <Label text="何ヶ月前" />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text" inputMode="numeric" pattern="[0-9]*"
+                      placeholder="例: 6"
+                      value={form.blackDyeMonths}
+                      onChange={e => set({ blackDyeMonths: e.target.value })}
+                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
+                    />
+                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ブリーチ */}
+            <div className="bg-white border border-[#E0E0E0] p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">ブリーチ（脱色）</div>
+                  <div className="text-xs text-[#9E9E9E] mt-0.5">全体・ハイライト含む</div>
+                </div>
+                <Toggle value={form.hasBleach} onChange={v => set({ hasBleach: v })} />
+              </div>
+              {form.hasBleach && (
+                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
+                  <Label text="何ヶ月前" />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text" inputMode="numeric" pattern="[0-9]*"
+                      placeholder="例: 3"
+                      value={form.bleachMonths}
+                      onChange={e => set({ bleachMonths: e.target.value })}
+                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
+                    />
+                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 縮毛矯正 */}
+            <div className="bg-white border border-[#E0E0E0] p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold">縮毛矯正・酸性ストレート</div>
+                  <div className="text-xs text-[#9E9E9E] mt-0.5">デジタルパーマ以外</div>
+                </div>
+                <Toggle value={form.hasStraightening} onChange={v => set({ hasStraightening: v })} />
+              </div>
+              {form.hasStraightening && (
+                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
+                  <Label text="何ヶ月前" />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text" inputMode="numeric" pattern="[0-9]*"
+                      placeholder="例: 12"
+                      value={form.straighteningMonths}
+                      onChange={e => set({ straighteningMonths: e.target.value })}
+                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
+                    />
+                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* ── STEP 3: 施術履歴 ──────────────────────────────────────── */}
+        {/* ══ STEP 3: リスク確認 + 同意 ══════════════════════════════ */}
         {step === 3 && (
-          <div className="space-y-4 pt-6 animate-in">
+          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
             <div>
-              <h2 className="font-serif text-xl font-semibold mb-1">施術履歴</h2>
-              <p className="text-xs text-muted">過去の薬剤施術履歴を正確にご申告ください。安全な施術のために重要な情報です。</p>
+              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">リスク確認</h2>
+              <p className="text-xs text-[#9E9E9E]">施術前にリスクをご確認の上、同意してください。</p>
             </div>
 
-            <HistoryRow
-              label="黒染め（ブラックカラー）"
-              has={form.history.hasBlackDye}
-              monthsAgo={form.history.blackDyeMonthsAgo}
-              times={form.history.blackDyeTimes}
-              details={form.history.blackDyeDetails}
-              onToggle={(v) => updHistory({ hasBlackDye: v })}
-              onMonths={(v) => updHistory({ blackDyeMonthsAgo: v })}
-              onTimes={(v) => updHistory({ blackDyeTimes: v })}
-              onDetails={(v) => updHistory({ blackDyeDetails: v })}
-              detailPlaceholder="使用した染料・施術店名など（任意）"
-            />
-
-            <HistoryRow
-              label="ブリーチ（脱色）"
-              has={form.history.hasBleach}
-              monthsAgo={form.history.bleachMonthsAgo}
-              times={form.history.bleachTimes}
-              details={form.history.bleachDetails}
-              onToggle={(v) => updHistory({ hasBleach: v })}
-              onMonths={(v) => updHistory({ bleachMonthsAgo: v })}
-              onTimes={(v) => updHistory({ bleachTimes: v })}
-              onDetails={(v) => updHistory({ bleachDetails: v })}
-              detailPlaceholder="ハイライト・全体など詳細（任意）"
-            />
-
-            <HistoryRow
-              label="縮毛矯正・酸性ストレート"
-              has={form.history.hasStraightening}
-              monthsAgo={form.history.straighteningMonthsAgo}
-              times={form.history.straighteningTimes}
-              details={form.history.straighteningDetails}
-              onToggle={(v) => updHistory({ hasStraightening: v })}
-              onMonths={(v) => updHistory({ straighteningMonthsAgo: v })}
-              onTimes={(v) => updHistory({ straighteningTimes: v })}
-              onDetails={(v) => updHistory({ straighteningDetails: v })}
-              detailPlaceholder="施術範囲・使用薬剤など（任意）"
-            />
-
-            <div className="border border-border p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold tracking-wide">その他の薬剤施術</span>
-                <YesNoToggle
-                  value={form.history.hasOtherChemical}
-                  onChange={(v) => updHistory({ hasOtherChemical: v })}
-                />
-              </div>
-              {form.history.hasOtherChemical && (
-                <div className="mt-3 pt-3 border-t border-border animate-in">
-                  <div className="section-label">詳細</div>
-                  <input
-                    type="text"
-                    placeholder="例：デジタルパーマ、酸熱トリートメントなど"
-                    value={form.history.otherChemicalDetails}
-                    onChange={(e) => updHistory({ otherChemicalDetails: e.target.value })}
-                    className="!py-2"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: リスク確認 ────────────────────────────────────── */}
-        {step === 4 && (
-          <div className="space-y-5 pt-6 animate-in">
-            <div>
-              <h2 className="font-serif text-xl font-semibold mb-1">リスク確認</h2>
-              <p className="text-xs text-muted">施術前に以下のリスクをご確認の上、同意事項にチェックをお入れください。</p>
-            </div>
-
-            <div
-              className={`border-l-4 p-4 bg-white ${
-                form.riskLevel === 'high'
-                  ? 'border-risk-high'
-                  : form.riskLevel === 'medium'
-                  ? 'border-risk-medium'
-                  : 'border-risk-low'
-              }`}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-[10px] tracking-[3px] text-muted">リスク評価</div>
-                <RiskBadge level={form.riskLevel} />
+            {/* リスク表示 */}
+            <div className={`bg-white border-l-4 p-5 ${riskBorder[form.riskLevel]}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-[9px] tracking-[3px] text-[#9E9E9E]">リスク評価</span>
+                <span className={`border text-xs font-bold px-3 py-1 tracking-widest ${riskStyle[form.riskLevel]}`}>
+                  {RISK_LABEL[form.riskLevel]}
+                </span>
               </div>
               <div className="space-y-3">
                 {form.riskItems.map((item, i) => (
-                  <div key={i} className="text-xs leading-relaxed text-zinc-700 flex gap-2">
-                    <span className="text-muted flex-shrink-0">—</span>
+                  <div key={i} className="flex gap-2 text-xs text-[#444] leading-relaxed">
+                    <span className="text-[#9E9E9E] shrink-0 mt-0.5">—</span>
                     <span>{item}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white border border-border">
-              <div className="px-4 pt-4 pb-2 border-b border-border">
-                <div className="text-[10px] tracking-[3px] text-muted">同意事項</div>
+            {/* 同意チェックボックス */}
+            <div className="bg-white border border-[#E0E0E0]">
+              <div className="px-5 pt-4 pb-2 border-b border-[#F0F0F0]">
+                <div className="text-[9px] tracking-[3px] text-[#9E9E9E]">同意事項</div>
               </div>
-              <div className="px-4">
-                <ConsentCheck
-                  checked={form.consents.understoodRisk}
-                  onChange={(v) => updConsent({ understoodRisk: v })}
-                  required
-                  label="上記リスク説明の内容を十分に理解しました"
-                  sub="施術結果・ダメージ等のリスクについて説明を受け、内容を理解しています。"
+              <div className="px-5">
+                <Check
+                  checked={form.consentRisk} required
+                  onChange={v => set({ consentRisk: v })}
+                  label="上記リスク説明の内容を理解し、施術を依頼します"
+                  sub="ダメージ・色ムラ等のリスクを理解した上で施術を希望します。"
                 />
-                <ConsentCheck
-                  checked={form.consents.noClaim}
-                  onChange={(v) => updConsent({ noClaim: v })}
-                  required
-                  label="施術後の返金・やり直し要求は行いません"
-                  sub="上記リスクを理解した上で施術を依頼しており、施術後の返金・過剰なやり直し請求は行いません。"
+                <Check
+                  checked={form.consentNoClaim} required
+                  onChange={v => set({ consentNoClaim: v })}
+                  label="施術後の返金・過剰なやり直し要求は行いません"
+                  sub="リスクを承知の上での依頼のため、施術後の返金要求は行いません。"
                 />
-                <ConsentCheck
-                  checked={form.consents.accurateHistory}
-                  onChange={(v) => updConsent({ accurateHistory: v })}
-                  required
+                <Check
+                  checked={form.consentHistory} required
+                  onChange={v => set({ consentHistory: v })}
                   label="施術履歴は正確に申告しました"
-                  sub="虚偽の申告により生じたトラブルについては責任を負いません。"
-                />
-                <ConsentCheck
-                  checked={form.consents.photoConsent}
-                  onChange={(v) => updConsent({ photoConsent: v })}
-                  label="施術写真のSNS・販促素材への使用に同意します"
-                  sub="顔が映らない範囲での使用となります。（任意）"
-                />
-                <ConsentCheck
-                  checked={form.consents.contactPermission}
-                  onChange={(v) => updConsent({ contactPermission: v })}
-                  label="アフターフォローのご連絡に同意します"
-                  sub="施術後1週間以内に状態確認のご連絡をする場合があります。（任意）"
+                  sub="虚偽申告により生じたトラブルはサロンの責任範囲外となります。"
                 />
               </div>
             </div>
 
-            {!canProceed() && (
-              <p className="text-xs text-risk-high text-center">
-                ＊ 必須の同意事項（赤いアスタリスク）にすべてチェックを入れてください
+            {!step3OK && (
+              <p className="text-xs text-[#B71C1C] text-center">
+                ＊ 3項目すべてにチェックを入れてください
               </p>
             )}
           </div>
         )}
 
-        {/* ── STEP 5: 電子署名 ──────────────────────────────────────── */}
-        {step === 5 && (
-          <div className="space-y-5 pt-6 animate-in">
+        {/* ══ STEP 4: 電子署名 ════════════════════════════════════════ */}
+        {step === 4 && (
+          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
             <div>
-              <h2 className="font-serif text-xl font-semibold mb-1">電子署名</h2>
-              <p className="text-xs text-muted">
-                上記の内容に同意の上、下枠内にご署名ください。<br />
-                署名後、同意書のPDFが自動的にダウンロードされます。
+              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">電子署名</h2>
+              <p className="text-xs text-[#9E9E9E]">
+                同意いただけましたら、下枠に指でサインしてください。<br />
+                署名後、PDFが自動でダウンロードされます。
               </p>
             </div>
 
-            <div className="bg-white border border-border p-4 space-y-3">
-              <div className="text-xs text-muted leading-relaxed">
-                <span className="font-semibold text-ink">{form.customerName} 様</span> は、
-                {form.treatmentDate} の施術（{form.requestedTreatment}）について、
-                リスク説明を受け、内容に同意します。
+            {/* 確認サマリー */}
+            <div className="bg-white border border-[#E0E0E0] p-4 space-y-1.5 text-xs text-[#666]">
+              <div><span className="font-semibold text-[#0A0A0A]">{form.customerName} 様</span></div>
+              <div>施術日：{form.treatmentDate}　担当：{form.stylistName}</div>
+              <div>施術内容：{form.requestedTreatment}</div>
+            </div>
+
+            {/* 署名キャンバス */}
+            <div className="bg-white border border-[#E0E0E0]">
+              <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-[#F0F0F0]">
+                <Label text="ご署名" required />
+                <button
+                  type="button"
+                  onClick={() => { sigRef.current?.clear(); setSigned(false); }}
+                  className="text-[10px] text-[#9E9E9E] underline"
+                >
+                  クリア
+                </button>
               </div>
-              <div className="section-label">ご署名 <span className="text-risk-high">*</span></div>
-              <div className="border border-border relative bg-zinc-50">
-                <SignaturePad
-                  ref={sigRef}
-                  onSign={() => setIsSigning(true)}
-                />
-                <div className="absolute top-2 right-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sigRef.current?.clear();
-                      setIsSigning(false);
-                    }}
-                    className="text-[10px] text-muted underline"
-                  >
-                    クリア
-                  </button>
-                </div>
-                {!isSigning && (
+              <div className="relative">
+                <SignaturePad ref={sigRef} onSign={() => setSigned(true)} />
+                {!signed && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-xs text-zinc-300 tracking-wider">ここに署名してください</span>
+                    <span className="text-xs text-[#CCCCCC] tracking-wider">ここに署名してください</span>
                   </div>
                 )}
               </div>
-              <p className="text-[10px] text-muted">
-                ※ タッチまたはマウスで署名をご記入ください
-              </p>
+              <div className="px-4 py-2 border-t border-[#F0F0F0]">
+                <p className="text-[10px] text-[#BBBBBB]">タッチまたはマウスでサインしてください</p>
+              </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-risk-high/30 text-risk-high text-xs p-3 text-center">
+              <div className="bg-red-50 border border-[#B71C1C]/30 text-[#B71C1C] text-xs p-3 text-center">
                 {error}
               </div>
             )}
@@ -770,55 +484,53 @@ export default function ConsentPage() {
         )}
       </main>
 
-      {/* Bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border">
-        <div className="max-w-lg mx-auto px-4 py-4 flex gap-3">
+      {/* ── ボトムナビ ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E8E8E8] safe-area-bottom">
+        <div className="max-w-lg mx-auto px-5 py-4 flex gap-3">
           {step > 1 && (
             <button
               type="button"
-              className="btn-secondary flex-1"
-              onClick={() => setStep((s) => s - 1)}
-              disabled={isSaving}
+              disabled={saving}
+              onClick={() => setStep(s => (s - 1) as 1|2|3|4)}
+              className="flex-1 border border-[#0A0A0A] text-[#0A0A0A] py-3.5 text-sm font-medium tracking-widest hover:bg-[#0A0A0A] hover:text-white transition-colors disabled:opacity-40"
             >
               戻る
             </button>
           )}
 
-          {step < TOTAL_STEPS && (
+          {step < 4 && (
             <button
               type="button"
-              className="btn-primary flex-1"
-              disabled={!canProceed()}
+              disabled={
+                (step === 1 && !step1OK) ||
+                (step === 3 && !step3OK)
+              }
               onClick={() => {
-                if (step === 3) {
-                  goToRisk();
-                } else {
-                  setStep((s) => s + 1);
-                }
+                if (step === 2) { enterStep3(); }
+                else { setStep(s => (s + 1) as 1|2|3|4); }
               }}
+              className="flex-1 bg-[#0A0A0A] text-white py-3.5 text-sm font-medium tracking-widest hover:bg-[#333] transition-colors disabled:bg-[#D0D0D0] disabled:cursor-not-allowed"
             >
               次へ
             </button>
           )}
 
-          {step === TOTAL_STEPS && (
+          {step === 4 && (
             <button
               type="button"
-              className="btn-primary flex-1 relative"
-              disabled={isSaving}
+              disabled={saving}
               onClick={handleSubmit}
+              className="flex-1 bg-[#0A0A0A] text-white py-3.5 text-sm font-medium tracking-widest hover:bg-[#333] transition-colors disabled:bg-[#D0D0D0] disabled:cursor-not-allowed"
             >
-              {isSaving ? (
+              {saving ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
                   </svg>
                   保存中...
                 </span>
-              ) : (
-                '同意して保存'
-              )}
+              ) : '同意して保存'}
             </button>
           )}
         </div>

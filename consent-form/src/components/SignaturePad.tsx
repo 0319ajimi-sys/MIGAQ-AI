@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  useRef,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 export interface SignaturePadRef {
   clear: () => void;
@@ -13,124 +8,90 @@ export interface SignaturePadRef {
   isEmpty: () => boolean;
 }
 
-interface Props {
-  onSign?: () => void;
-  className?: string;
-}
-
-const SignaturePad = forwardRef<SignaturePadRef, Props>(
-  ({ onSign, className = '' }, ref) => {
+const SignaturePad = forwardRef<SignaturePadRef, { onSign?: () => void }>(
+  ({ onSign }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const isDrawing = useRef(false);
-    const lastPoint = useRef<{ x: number; y: number } | null>(null);
-    const hasDrawn = useRef(false);
+    const drawing   = useRef(false);
+    const last      = useRef<{ x: number; y: number } | null>(null);
+    const hasDrawn  = useRef(false);
 
+    // キャンバスをコンテナに合わせてリサイズ
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-
-      const resize = () => {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const rect = canvas.getBoundingClientRect();
+      const setup = () => {
+        const ctx = canvas.getContext('2d')!;
+        const r   = canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
-        const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+        canvas.width  = r.width  * dpr;
+        canvas.height = r.height * dpr;
         ctx.scale(dpr, dpr);
-        ctx.putImageData(snapshot, 0, 0);
-        ctx.strokeStyle = '#0A0A0A';
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth   = 2.5;
+        ctx.lineCap     = 'round';
+        ctx.lineJoin    = 'round';
       };
-
-      resize();
-      const ro = new ResizeObserver(resize);
+      setup();
+      const ro = new ResizeObserver(setup);
       ro.observe(canvas);
       return () => ro.disconnect();
     }, []);
 
-    function getPoint(
-      e: MouseEvent | TouchEvent,
-      canvas: HTMLCanvasElement
-    ): { x: number; y: number } {
-      const rect = canvas.getBoundingClientRect();
+    function point(e: MouseEvent | TouchEvent): { x: number; y: number } {
+      const r = canvasRef.current!.getBoundingClientRect();
       if ('touches' in e) {
-        return {
-          x: e.touches[0].clientX - rect.left,
-          y: e.touches[0].clientY - rect.top,
-        };
+        return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
       }
-      return {
-        x: (e as MouseEvent).clientX - rect.left,
-        y: (e as MouseEvent).clientY - rect.top,
-      };
+      return { x: (e as MouseEvent).clientX - r.left, y: (e as MouseEvent).clientY - r.top };
     }
 
-    function startDraw(e: MouseEvent | TouchEvent) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      isDrawing.current = true;
-      lastPoint.current = getPoint(e, canvas);
+    function onStart(e: MouseEvent | TouchEvent) {
+      drawing.current = true;
+      last.current = point(e);
       e.preventDefault();
     }
-
-    function draw(e: MouseEvent | TouchEvent) {
-      if (!isDrawing.current) return;
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
-      if (!canvas || !ctx) return;
-      const point = getPoint(e, canvas);
+    function onMove(e: MouseEvent | TouchEvent) {
+      if (!drawing.current) return;
+      const ctx = canvasRef.current!.getContext('2d')!;
+      const p   = point(e);
       ctx.beginPath();
-      if (lastPoint.current) {
-        ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
-        ctx.lineTo(point.x, point.y);
-        ctx.stroke();
-      }
-      lastPoint.current = point;
+      if (last.current) { ctx.moveTo(last.current.x, last.current.y); }
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last.current  = p;
       hasDrawn.current = true;
       e.preventDefault();
     }
-
-    function stopDraw() {
-      if (isDrawing.current && hasDrawn.current) onSign?.();
-      isDrawing.current = false;
-      lastPoint.current = null;
+    function onEnd() {
+      if (drawing.current && hasDrawn.current) onSign?.();
+      drawing.current = false;
+      last.current    = null;
     }
 
     useImperativeHandle(ref, () => ({
       clear() {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        if (canvas && ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          hasDrawn.current = false;
-        }
+        const c = canvasRef.current;
+        c?.getContext('2d')?.clearRect(0, 0, c.width, c.height);
+        hasDrawn.current = false;
       },
-      getDataUrl() {
-        return canvasRef.current?.toDataURL('image/png') ?? '';
-      },
-      isEmpty() {
-        return !hasDrawn.current;
-      },
+      getDataUrl: () => canvasRef.current?.toDataURL('image/png') ?? '',
+      isEmpty:    () => !hasDrawn.current,
     }));
 
     return (
       <canvas
         ref={canvasRef}
-        className={`w-full h-36 cursor-crosshair touch-none ${className}`}
-        onMouseDown={(e) => startDraw(e.nativeEvent)}
-        onMouseMove={(e) => draw(e.nativeEvent)}
-        onMouseUp={stopDraw}
-        onMouseLeave={stopDraw}
-        onTouchStart={(e) => startDraw(e.nativeEvent)}
-        onTouchMove={(e) => draw(e.nativeEvent)}
-        onTouchEnd={stopDraw}
+        className="w-full h-36 cursor-crosshair touch-none bg-white"
+        onMouseDown={e => onStart(e.nativeEvent)}
+        onMouseMove={e => onMove(e.nativeEvent)}
+        onMouseUp={onEnd}
+        onMouseLeave={onEnd}
+        onTouchStart={e => onStart(e.nativeEvent)}
+        onTouchMove={e => onMove(e.nativeEvent)}
+        onTouchEnd={onEnd}
       />
     );
   }
 );
-
 SignaturePad.displayName = 'SignaturePad';
 export default SignaturePad;

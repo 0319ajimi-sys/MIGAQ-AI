@@ -2,90 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap');
-
-:root {
-  --font-noto-sans: 'Noto Sans JP', sans-serif;
-  --font-noto-serif: 'Noto Serif JP', serif;
-}
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+* { -webkit-tap-highlight-color: transparent; }
 
 body {
-  font-family: var(--font-noto-sans);
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP',
+    Meiryo, 'Yu Gothic', sans-serif;
   background-color: #FAFAFA;
   color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
 }
 
-input[type='text'],
-input[type='tel'],
-input[type='date'],
-select,
-textarea {
-  @apply w-full border border-border bg-white px-4 py-3 text-ink text-sm
-         focus:outline-none focus:border-ink transition-colors;
-}
-
-input[type='text']:focus,
-input[type='tel']:focus,
-input[type='date']:focus,
-select:focus,
-textarea:focus {
-  border-color: #0A0A0A;
-}
-
-.btn-primary {
-  @apply bg-ink text-white px-8 py-3.5 text-sm font-medium tracking-widest
-         hover:bg-zinc-800 active:bg-zinc-900 transition-colors
-         disabled:bg-zinc-300 disabled:cursor-not-allowed;
-}
-
-.btn-secondary {
-  @apply border border-ink text-ink px-8 py-3.5 text-sm font-medium tracking-widest
-         hover:bg-ink hover:text-white transition-colors;
-}
-
-.section-label {
-  @apply text-[10px] tracking-[4px] text-muted uppercase mb-2;
-}
-
-.toggle-group {
-  @apply flex border border-border overflow-hidden;
-}
-
-.toggle-btn {
-  @apply flex-1 py-3 text-sm font-medium transition-colors text-center cursor-pointer;
-}
-
-.toggle-btn.active {
-  @apply bg-ink text-white;
-}
-
-.toggle-btn:not(.active) {
-  @apply bg-white text-muted hover:bg-zinc-50;
-}
-
-.risk-badge-low {
-  @apply border border-risk-low text-risk-low;
-}
-.risk-badge-medium {
-  @apply border border-risk-medium text-risk-medium;
-}
-.risk-badge-high {
-  @apply border border-risk-high text-risk-high;
-}
-
-.step-indicator {
-  @apply h-0.5 flex-1 transition-colors duration-300;
+.font-serif {
+  font-family: 'Hiragino Mincho ProN', 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-in {
-  animation: fadeIn 0.25s ease-out forwards;
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }

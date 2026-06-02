@@ -1,154 +1,111 @@
-import type { TreatmentHistoryData, RiskLevel } from '@/types/consent';
+export type RiskLevel = 'low' | 'medium' | 'high';
 
 export interface RiskResult {
   level: RiskLevel;
   items: string[];
-  score: number;
 }
 
 export function generateRisk(
-  history: TreatmentHistoryData,
-  requestedTreatment: string
+  hasBlackDye: boolean,
+  blackDyeMonths: number,
+  hasBleach: boolean,
+  bleachMonths: number,
+  hasStraightening: boolean,
+  straighteningMonths: number,
+  treatment: string
 ): RiskResult {
   const items: string[] = [];
   let score = 0;
 
-  const t = requestedTreatment.toLowerCase();
-  const isBleachTx = t.includes('ブリーチ');
-  const isColorTx = t.includes('カラー') || t.includes('バレイヤージュ') || t.includes('ポイント');
-  const isPermTx = t.includes('パーマ');
-  const isStraightTx = t.includes('縮毛');
+  const isBleachTx = treatment.includes('ブリーチ');
+  const isColorTx  = treatment.includes('カラー') || treatment.includes('ポイント');
+  const isPermTx   = treatment.includes('パーマ');
+  const isStraightTx = treatment.includes('縮毛');
 
-  // ─── 黒染め履歴 ───────────────────────────────────────────
-  if (history.hasBlackDye) {
-    const months = parseInt(history.blackDyeMonthsAgo) || 12;
-    if (months <= 3) {
+  // ─── 黒染め ──────────────────────────────────────────────────
+  if (hasBlackDye) {
+    if (blackDyeMonths <= 3) {
       score += 5;
       items.push(
-        '【要注意】直近3ヶ月以内の黒染め履歴があります。黒染め染料が毛髪内部に強く残留しており、カラー・ブリーチを施術しても希望の明るさに仕上がらず、緑・オレンジ・黄色系に発色する可能性が非常に高いです。複数回の施術が必要になる場合や、希望色への到達が困難な場合があります。'
+        '【要注意】3ヶ月以内の黒染め履歴があります。ブリーチ・カラーを施術しても希望の明るさにならず、オレンジ・黄緑が残る可能性が非常に高いです。'
       );
-    } else if (months <= 6) {
+    } else if (blackDyeMonths <= 6) {
       score += 3;
       items.push(
-        '6ヶ月以内の黒染め履歴があります。施術部位により色ムラが生じる可能性があります。希望の明るさや色味に仕上がらない場合があります。'
+        '6ヶ月以内の黒染め履歴があります。カラーの発色が部分的にムラになる場合があります。'
       );
     } else {
       score += 1;
-      items.push(
-        '黒染め履歴があります。時間が経過していますが、施術結果に若干影響する可能性があります。'
-      );
+      items.push('黒染め履歴があります。カラーの発色に影響する場合があります。');
     }
-
     if (isBleachTx) {
       score += 3;
       items.push(
-        '黒染め後のブリーチ施術は、均一に脱色されず、まだら・オレンジ・黄色が残るリスクが高いです。1回の施術で希望の明るさに到達できない場合があることを予めご了承ください。'
+        '黒染め後のブリーチは均一に脱色されにくく、1回の施術で希望の明るさに到達できない場合があります。複数回の施術が必要になる可能性があります。'
       );
     }
     if (isColorTx && !isBleachTx) {
       score += 1;
+      items.push('黒染め後のカラーは通常より発色が抑えられる場合があります。');
+    }
+  }
+
+  // ─── ブリーチ ─────────────────────────────────────────────────
+  if (hasBleach) {
+    if (bleachMonths <= 3) {
+      score += 4;
       items.push(
-        '黒染め後のカラー施術は、発色が通常と異なる場合があります。担当スタイリストと期待する仕上がりを十分にご確認ください。'
+        `直近3ヶ月以内のブリーチ履歴があります。毛髪ダメージが高い状態のため、断毛・切れ毛が生じるリスクがあります。`
+      );
+    } else {
+      score += 2;
+      items.push(
+        `ブリーチ履歴（${bleachMonths}ヶ月前）があります。毛髪がダメージを受けており、追加施術でさらに傷む可能性があります。`
       );
     }
   }
 
-  // ─── ブリーチ履歴 ────────────────────────────────────────
-  if (history.hasBleach) {
-    const months = parseInt(history.bleachMonthsAgo) || 12;
+  // ─── 縮毛矯正 ─────────────────────────────────────────────────
+  if (hasStraightening) {
     score += 2;
-    if (months <= 3) {
-      score += 2;
-      items.push(
-        '直近3ヶ月以内のブリーチ履歴があります。毛髪が既に相当のダメージを受けている状態です。追加の薬剤施術により断毛・切れ毛・チリつきが生じるリスクがあります。'
-      );
-    } else {
-      items.push(
-        'ブリーチ施術履歴があります。毛髪がダメージを受けており、さらなるダメージのリスクがあります。担当スタイリストの施術可否判断に従っていただく場合があります。'
-      );
-    }
-  }
-
-  // ─── 縮毛矯正履歴 ───────────────────────────────────────
-  if (history.hasStraightening) {
-    const months = parseInt(history.straighteningMonthsAgo) || 12;
-    score += 2;
-    if (months <= 6) {
-      score += 2;
-      items.push(
-        '縮毛矯正の施術履歴があります。薬剤の化学的相互作用により、パーマ・カラーの発色・定着が予測と異なる場合があります。'
-      );
-    } else {
-      items.push(
-        '縮毛矯正の履歴があります。薬剤反応が通常と異なる場合があります。'
-      );
-    }
+    items.push(
+      '縮毛矯正の履歴があります。薬剤の相互作用により、意図しない仕上がりになる場合があります。'
+    );
     if (isPermTx) {
       score += 3;
       items.push(
-        '【要注意】縮毛矯正後のパーマ施術は、薬剤の相性により十分にかからない・または過剰にダメージを受けるリスクがあります。施術後の仕上がりが想定と大きく異なる可能性があります。'
+        '【要注意】縮毛矯正後のパーマ施術は、パーマがかかりにくい・または過剰ダメージのリスクがあります。'
       );
     }
-    if (isStraightTx) {
+    if (isStraightTx && straighteningMonths <= 6) {
       score += 1;
-      items.push(
-        '縮毛矯正の重ね施術は、既施術部分へのダメージ蓄積に注意が必要です。'
-      );
+      items.push('縮毛矯正の重ね施術は、既施術部分へのダメージ蓄積に注意が必要です。');
     }
   }
 
-  // ─── その他の薬剤履歴 ───────────────────────────────────
-  if (history.hasOtherChemical) {
-    score += 1;
-    items.push(
-      'その他の薬剤施術履歴があります。使用薬剤の相互作用により予期しない結果が生じる可能性があります。施術前に担当スタイリストへ詳細をお伝えください。'
-    );
-  }
-
-  // ─── 複合リスク ──────────────────────────────────────────
-  const chemCount = [
-    history.hasBlackDye,
-    history.hasBleach,
-    history.hasStraightening,
-  ].filter(Boolean).length;
+  // ─── 複合リスク ───────────────────────────────────────────────
+  const chemCount = [hasBlackDye, hasBleach, hasStraightening].filter(Boolean).length;
   if (chemCount >= 2) {
     score += 2;
     items.push(
-      '複数の薬剤施術履歴があります。化学的な複合リスクにより施術結果の予測精度が低下します。担当スタイリストと十分にカウンセリングを行ってください。'
+      '複数の薬剤施術履歴があります。化学的な複合リスクにより、施術結果の予測が困難になります。担当スタイリストと十分にご相談ください。'
     );
   }
 
-  // ─── 共通事項（常に表示） ────────────────────────────────
+  // ─── 共通事項 ─────────────────────────────────────────────────
   items.push(
-    'かぶれ・アレルギー反応（かゆみ・赤み・腫れ等）が現れた場合は直ちに施術を中断し、医療機関を受診してください。'
+    'アレルギー反応（かゆみ・赤み・腫れ等）が現れた場合は直ちに施術を中断し、医療機関を受診してください。'
   );
   items.push(
-    '施術後のホームケア（シャンプー・トリートメント・日々のお手入れ）が仕上がりの持ちに大きく影響します。担当スタイリストの指示に従ってください。'
-  );
-  items.push(
-    '施術の仕上がりは毛髪の状態・施術履歴・個人差により、カウンセリング時の説明と若干異なる場合があります。'
+    '施術後のホームケアが仕上がりの持ちに大きく影響します。担当スタイリストの指示に従ってください。'
   );
 
-  let level: RiskLevel;
-  if (score >= 7) {
-    level = 'high';
-  } else if (score >= 3) {
-    level = 'medium';
-  } else {
-    level = 'low';
-  }
-
-  return { level, items, score };
+  const level: RiskLevel = score >= 6 ? 'high' : score >= 2 ? 'medium' : 'low';
+  return { level, items };
 }
 
 export const RISK_LABEL: Record<RiskLevel, string> = {
-  low: '低リスク',
+  low:    '低リスク',
   medium: '中リスク',
-  high: '高リスク',
-};
-
-export const RISK_COLOR: Record<RiskLevel, string> = {
-  low: 'text-risk-low border-risk-low',
-  medium: 'text-risk-medium border-risk-medium',
-  high: 'text-risk-high border-risk-high',
+  high:   '高リスク',
 };
