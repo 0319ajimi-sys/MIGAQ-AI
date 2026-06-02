@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>H&T Group Inc. | 人と未来に、価値ある変化を。</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+JP:wght@200;300;400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+
+  <style>
+    /* =============================================
+       RESET & BASE
+    ============================================= */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:         #070707;
+      --surface:    #0e0e0e;
+      --surface2:   #181818;
+      --gold:       #c9a870;
+      --gold-light: #e8d5b0;
+      --gold-dim:   rgba(201,168,112,0.15);
+      --white:      #f5f5f5;
+      --gray:       #888888;
+      --gray-dim:   #555555;
+      --border:     rgba(255,255,255,0.07);
+      --border-gold:rgba(201,168,112,0.25);
+      --fd: 'Cormorant Garamond', 'Noto Serif JP', serif;
+      --fb: 'Noto Sans JP', sans-serif;
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--fb);
+      font-weight: 300;
+      line-height: 1.8;
+      overflow-x: hidden;
+    }
+
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; }
+    button { background: none; border: none; cursor: pointer; font-family: inherit; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); opacity: 0.4; }
+
+    /* =============================================
+       HEADER
+    ============================================= */
+    #header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 56px;
+      height: 72px;
+      background: rgba(7,7,7,0.82);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.4s var(--ease);
+    }
+
+    #header.scrolled { background: rgba(7,7,7,0.97); }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.25s var(--ease);
+    }
+    .header-brand:hover { transform: scale(1.05); }
+
+    .header-brand img {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .header-brand-logo-fallback {
+      height: 38px;
+      width: 38px;
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--fd);
+      font-size: 16px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .header-brand-text {
+      font-family: var(--fd);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      color: var(--gold-light);
+      white-space: nowrap;
+    }
+
+    #main-nav {
+      display: flex;
+      align-items: center;
+      gap: 44px;
+    }
+
+    .nav-link {
+      font-family: var(--fd);
+      font-size: 11.5px;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+      color: var(--gray);
+      text-transform: uppercase;
+      cursor: pointer;
+      position: relative;
+      padding-bottom: 3px;
+      transition: color 0.2s var(--ease);
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 1px;
+      background: var(--gold);
+      transition: width 0.3s var(--ease);
+    }
+    .nav-link:hover { color: var(--gold); }
+    .nav-link:hover::after { width: 100%; }
+
+    .menu-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .menu-toggle span {
+      display: block; width: 22px; height: 1px;
+      background: var(--white);
+      transition: all 0.25s var(--ease);
+    }
+
+    /* =============================================
+       SECTION BASE
+    ============================================= */
+    .section-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      will-change: transform;
+    }
+
+    .section-overlay {
+      position: absolute;
+      inset: 0;
+    }
+
+    .section-inner {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* =============================================
+       HERO
+    ============================================= */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-bg {
+      background-image: url('images/bg-scene-01.jpg');
+      background-color: #0d0d12;
+    }
+
+    .hero-overlay {
+      background: linear-gradient(
+        170deg,
+        rgba(7,7,7,0.35) 0%,
+        rgba(7,7,7,0.55) 50%,
+        rgba(7,7,7,0.80) 100%
+      );
+    }
+
+    .hero-content {
+      text-align: center;
+      padding: 130px 48px 100px;
+      max-width: 860px;
+      width: 100%;
+    }
+
+    /* Large hero logo with animation */
+    .hero-logo-wrap {
+      margin-bottom: 52px;
+      display: inline-block;
+      cursor: default;
+    }
+
+    .hero-logo-img {
+      width: 160px;
+      height: auto;
+      object-fit: contain;
+      animation: heroPendulum 8s ease-in-out infinite;
+      filter: drop-shadow(0 0 40px rgba(201,168,112,0.25));
+      transition: filter 0.4s var(--ease), animation-play-state 0.3s;
+    }
+    .hero-logo-img:hover {
+      filter: drop-shadow(0 0 70px rgba(201,168,112,0.55));
+      animation-play-state: paused;
+    }
+
+    .hero-logo-fallback {
+      width: 160px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--gold);
+      font-family: var(--fd);
+      font-size: 56px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      animation: heroPendulum 8s ease-in-out infinite;
+    }
+
+    @keyframes heroPendulum {
+      0%   { transform: translateY(0px)   rotate(0deg)   scale(1); }
+      20%  { transform: translateY(-14px) rotate(2.5deg) scale(1.02); }
+      50%  { transform: translateY(-6px)  rotate(-1.5deg) scale(1); }
+      80%  { transform: translateY(-12px) rotate(2deg)   scale(1.01); }
+      100% { transform: translateY(0px)   rotate(0deg)   scale(1); }
+    }
+
+    .hero-logo-caption {
+      margin-top: 18px;
+      font-family: var(--fd);
+      font-size: 13px;
+      letter-spacing: 0.3em;
+      color: var(--gold-light);
+      opacity: 0.85;
+    }
+
+    .hero-tagline {
+      font-family: var(--fd);
+      font-size: clamp(30px, 4.5vw, 58px);
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      line-height: 1.35;
+      margin-bottom: 28px;
+      color: var(--white);
+    }
+    .hero-tagline em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-sub {
+      font-size: clamp(12px, 1.4vw, 15px);
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.08em;
+      line-height: 2.2;
+      margin-bottom: 60px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* Scroll indicator */
+    .scroll-cue {
+      position: absolute;
+      bottom: 44px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      z-index: 2;
+      animation: scrollBob 2.4s ease-in-out infinite;
+    }
+    @keyframes scrollBob {
+      0%,100% { opacity: 0.35; transform: translateX(-50%) translateY(0); }
+      50%      { opacity: 0.8;  transform: translateX(-50%) translateY(9px); }
+    }
+    .scroll-cue-text {
+      font-family: var(--fd);
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      color: var(--gray);
+      text-transform: uppercase;
+    }
+    .scroll-cue-line {
+      width: 1px; height: 48px;
+      background: linear-gradient(to bottom, var(--gray), transparent);
+    }
+
+    /* =============================================
+       IMAGE BUTTONS (from provided assets)
+    ============================================= */
+    .img-btn {
+      display: inline-block;
+      cursor: pointer;
+      transition: transform 0.22s var(--ease), filter 0.22s var(--ease);
+      line-height: 0;
+    }
+    .img-btn:hover {
+      transform: scale(1.06);
+      filter: brightness(1.1);
+    }
+    .img-btn img { max-height: 52px; width: auto; }
+
+    /* CSS fallback buttons (shown when image not found) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 44px;
+      font-family: var(--fd);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      cursor: pointer;
+      transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), background 0.22s var(--ease), color 0.22s var(--ease);
+      white-space: nowrap;
+    }
+    .btn:hover { transform: scale(1.06); }
+
+    .btn-gold {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+    }
+    .btn-gold:hover {
+      background: var(--gold-light);
+      box-shadow: 0 8px 36px rgba(201,168,112,0.35);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .btn-outline:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      box-shadow: 0 8px 36px rgba(201,168,112,0.12);
+    }
+
+    /* =============================================
+       MISSION / VISION / VALUES
+    ============================================= */
+    #mission { background: var(--surface); }
+
+    .mission-bg { background-image: url('images/bg-scene-02.jpg'); background-color: #0a0c0f; }
+    .mission-overlay { background: linear-gradient(to bottom, rgba(7,7,7,0.62), rgba(7,7,7,0.78)); }
+
+    .mission-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 148px 56px 120px;
+    }
+
+    .section-eyebrow {
+      display: block;
+      font-family: var(--fd);
+      font-size: 10px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-family: var(--fd);
+      font-size: clamp(34px, 4.5vw, 58px);
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      line-height: 1.15;
+      margin-bottom: 72px;
+      color: var(--white);
+    }
+
+    .mvv-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 80px;
+    }
+
+    .mvv-card {
+      background: rgba(7,7,7,0.88);
+      padding: 52px 40px;
+      transition: background 0.35s var(--ease);
+    }
+    .mvv-card:hover { background: rgba(18,18,18,0.94); }
+
+    .mvv-label {
+      display: block;
+      font-family: var(--fd);
+      font-size: 9.5px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .mvv-heading {
+      font-family: var(--fd);
+      font-size: clamp(20px, 2vw, 28px);
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.4;
+      margin-bottom: 18px;
+    }
+
+    .mvv-text {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 2.2;
+    }
+
+    /* Values */
+    .values-title {
+      font-family: var(--fd);
+      font-size: clamp(22px, 2.5vw, 32px);
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 52px;
+      letter-spacing: 0.06em;
+    }
+
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+      margin-bottom: 80px;
+    }
+
+    .value-item {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+    }
+
+    .value-num {
+      font-family: var(--fd);
+      font-size: 54px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.05);
+      line-height: 1;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .value-name {
+      font-family: var(--fd);
+      font-size: 19px;
+      font-weight: 400;
+      color: var(--gold);
+      margin-bottom: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .value-desc {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 2.2;
+    }
+
+    .mission-cta {
+      text-align: center;
+      padding-top: 20px;
+    }
+
+    /* =============================================
+       STORY
+    ============================================= */
+    #story {}
+
+    .story-bg { background-image: url('images/bg-scene-03.jpg'); background-color: #070a07; }
+    .story-overlay { background: linear-gradient(to bottom, rgba(7,7,7,0.55), rgba(7,7,7,0.82)); }
+
+    .story-inner {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 148px 56px 120px;
+      text-align: center;
+    }
+
+    .story-lead {
+      font-family: var(--fd);
+      font-size: clamp(15px, 1.6vw, 19px);
+      font-weight: 300;
+      color: rgba(245,245,245,0.82);
+      line-height: 2.6;
+      margin-bottom: 48px;
+    }
+
+    .story-lead em { color: var(--gold); font-style: italic; }
+
+    .story-divider {
+      width: 1px; height: 72px;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      margin: 0 auto 48px;
+    }
+
+    .story-quote {
+      border-left: 2px solid var(--gold);
+      padding: 24px 32px;
+      text-align: left;
+      margin: 56px 0;
+      font-family: var(--fd);
+      font-size: clamp(16px, 1.6vw, 20px);
+      font-style: italic;
+      color: var(--gold-light);
+      line-height: 2.2;
+      background: rgba(201,168,112,0.04);
+    }
+
+    /* =============================================
+       SERVICES
+    ============================================= */
+    #services {}
+
+    .services-bg { background-image: url('images/bg-scene-04.jpg'); background-color: #0c0c10; }
+    .services-overlay { background: linear-gradient(to bottom, rgba(7,7,7,0.58), rgba(7,7,7,0.74)); }
+
+    .services-inner {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 148px 56px 120px;
+    }
+
+    /* Ticker */
+    .ticker-wrap {
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 0;
+      margin: 64px 0 72px;
+    }
+
+    .ticker-track {
+      display: flex;
+      width: max-content;
+      animation: ticker 28s linear infinite;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+
+    @keyframes ticker {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .ticker-set {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 48px;
+      font-family: var(--fd);
+      font-size: 15px;
+      letter-spacing: 0.18em;
+      color: var(--gray);
+      white-space: nowrap;
+    }
+
+    .ticker-item img {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.65;
+    }
+
+    .ticker-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* Service cards */
+    .services-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      background: var(--border);
+    }
+
+    .service-card {
+      background: rgba(7,7,7,0.90);
+      padding: 72px 60px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.35s var(--ease);
+    }
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0;
+      transition: opacity 0.4s var(--ease);
+    }
+    .service-card:hover::before { opacity: 1; }
+    .service-card:hover { background: rgba(15,15,15,0.95); }
+
+    .service-tag {
+      display: block;
+      font-family: var(--fd);
+      font-size: 9.5px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .service-name {
+      font-family: var(--fd);
+      font-size: clamp(22px, 2.5vw, 34px);
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.3;
+      margin-bottom: 24px;
+    }
+
+    .service-desc {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 2.3;
+      margin-bottom: 44px;
+    }
+
+    /* =============================================
+       RECRUIT
+    ============================================= */
+    #recruit { background: var(--bg); }
+
+    .recruit-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 130px 56px 110px;
+      text-align: center;
+    }
+
+    .recruit-title {
+      font-family: var(--fd);
+      font-size: clamp(28px, 4vw, 50px);
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.4;
+      margin-bottom: 36px;
+    }
+
+    .recruit-text {
+      font-size: 14px;
+      color: var(--gray);
+      line-height: 2.4;
+      margin-bottom: 64px;
+    }
+
+    /* Icons row */
+    .icons-row {
+      display: flex;
+      justify-content: center;
+      gap: 72px;
+      margin-bottom: 64px;
+    }
+
+    .icon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .icon-item img {
+      width: 76px;
+      height: 76px;
+      object-fit: contain;
+      opacity: 0.85;
+    }
+
+    .icon-fallback {
+      width: 76px; height: 76px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--fd);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+    }
+
+    .icon-label {
+      font-family: var(--fd);
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      color: var(--gray-dim);
+      text-transform: uppercase;
+    }
+
+    /* =============================================
+       CONTACT
+    ============================================= */
+    #contact { background: var(--surface); }
+
+    .contact-inner {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 130px 56px 110px;
+    }
+
+    .contact-meta {
+      display: flex;
+      gap: 64px;
+      margin: 52px 0 64px;
+      flex-wrap: wrap;
+    }
+
+    .contact-meta-item { flex: 1; min-width: 200px; }
+
+    .meta-label {
+      display: block;
+      font-family: var(--fd);
+      font-size: 9px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .meta-value {
+      font-family: var(--fd);
+      font-size: 16px;
+      color: var(--white);
+      letter-spacing: 0.06em;
+      line-height: 1.7;
+    }
+    .meta-value a { color: var(--white); transition: color 0.2s; }
+    .meta-value a:hover { color: var(--gold); }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin-bottom: 52px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .form-label {
+      font-size: 10px;
+      letter-spacing: 0.38em;
+      color: var(--gray);
+      text-transform: uppercase;
+    }
+
+    .form-input, .form-textarea {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: var(--fb);
+      font-size: 14px;
+      font-weight: 300;
+      padding: 16px 20px;
+      outline: none;
+      transition: border-color 0.22s var(--ease), background 0.22s var(--ease);
+      width: 100%;
+    }
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--gold);
+      background: rgba(255,255,255,0.05);
+    }
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--gray-dim); }
+    .form-textarea { resize: vertical; min-height: 160px; }
+
+    .btn-submit {
+      align-self: flex-start;
+      padding: 15px 56px;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-family: var(--fd);
+      font-size: 12px;
+      letter-spacing: 0.35em;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.22s var(--ease);
+    }
+    .btn-submit:hover {
+      background: var(--gold);
+      color: var(--bg);
+      transform: scale(1.04);
+    }
+
+    /* Social icons */
+    .social-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 48px;
+    }
+
+    .social-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px; height: 52px;
+      border: 1px solid var(--border);
+      color: var(--gray);
+      transition: all 0.22s var(--ease);
+      cursor: pointer;
+    }
+    .social-link:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: scale(1.1);
+    }
+    .social-link img {
+      width: 26px; height: 26px;
+      object-fit: contain;
+      filter: grayscale(1) brightness(0.6);
+      transition: filter 0.22s var(--ease);
+    }
+    .social-link:hover img { filter: grayscale(0) brightness(1); }
+
+    .social-link svg {
+      width: 22px; height: 22px;
+      stroke: currentColor;
+      fill: none;
+    }
+
+    /* =============================================
+       FOOTER
+    ============================================= */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 52px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-brand img {
+      height: 30px; width: auto;
+      object-fit: contain;
+    }
+
+    .footer-brand-text {
+      font-family: var(--fd);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--gray-dim);
+    }
+
+    .footer-copy {
+      font-size: 11px;
+      color: var(--gray-dim);
+      letter-spacing: 0.1em;
+    }
+
+    /* =============================================
+       SECTION DIVIDERS
+    ============================================= */
+    .gold-line {
+      width: 1px; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      margin: 0 auto;
+    }
+
+    /* =============================================
+       SCROLL ANIMATIONS
+    ============================================= */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.85s var(--ease-io), transform 0.85s var(--ease-io);
+    }
+    .reveal.from-left {
+      transform: translateX(-36px);
+    }
+    .reveal.from-right {
+      transform: translateX(36px);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0) translateX(0);
+    }
+
+    .delay-1 { transition-delay: 120ms; }
+    .delay-2 { transition-delay: 240ms; }
+    .delay-3 { transition-delay: 360ms; }
+    .delay-4 { transition-delay: 480ms; }
+    .delay-5 { transition-delay: 600ms; }
+
+    /* =============================================
+       RESPONSIVE
+    ============================================= */
+    @media (max-width: 900px) {
+      #header { padding: 0 28px; }
+      #main-nav { display: none; }
+      .menu-toggle { display: flex; }
+
+      .mvv-grid, .values-grid, .services-grid { grid-template-columns: 1fr; }
+
+      .hero-content, .mission-inner, .story-inner, .services-inner,
+      .recruit-inner, .contact-inner { padding-left: 28px; padding-right: 28px; }
+
+      .service-card { padding: 52px 36px; }
+      .icons-row { gap: 40px; }
+      footer { flex-direction: column; text-align: center; padding: 40px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header id="header">
+  <div class="header-brand" onclick="scrollTo('hero')">
+    <img src="images/logo.png" alt="H&T Group Inc."
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div class="header-brand-logo-fallback" style="display:none;">H</div>
+    <span class="header-brand-text">H&T Group Inc.</span>
+  </div>
+
+  <nav id="main-nav">
+    <span class="nav-link" onclick="scrollTo('mission')">Mission</span>
+    <span class="nav-link" onclick="scrollTo('story')">Story</span>
+    <span class="nav-link" onclick="scrollTo('services')">Service</span>
+    <span class="nav-link" onclick="scrollTo('recruit')">Recruit</span>
+    <span class="nav-link" onclick="scrollTo('contact')">Contact</span>
+  </nav>
+
+  <div class="menu-toggle" id="menuToggle">
+    <span></span><span></span><span></span>
+  </div>
+</header>
+
+
+<!-- ==================== HERO ==================== -->
+<section id="hero" class="section-wrap">
+  <div class="section-bg hero-bg" id="heroBg"></div>
+  <div class="section-overlay hero-overlay"></div>
+
+  <div class="section-inner hero-content">
+    <!-- Large logo with animation -->
+    <div class="hero-logo-wrap reveal">
+      <img src="images/logo.png" alt="H&T Group Inc." class="hero-logo-img"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="hero-logo-fallback" style="display:none;">H&T</div>
+      <p class="hero-logo-caption">H&T Group Inc.</p>
+    </div>
+
+    <h1 class="hero-tagline reveal delay-1">
+      人と未来に、<em>価値ある変化を。</em>
+    </h1>
+
+    <p class="hero-sub reveal delay-2">
+      人・モノ・サービスが持つ本来の価値を引き出し、<br>
+      未来につながる変化を創り続けます。
+    </p>
+
+    <div class="hero-cta reveal delay-3">
+      <!-- Image button: 私たちについて (image 12) -->
+      <span class="img-btn" onclick="scrollTo('mission')" role="button" aria-label="私たちについて">
+        <img src="images/btn-about.png" alt="私たちについて"
+             onerror="this.outerHTML='<button class=\'btn btn-outline\' onclick=\'scrollTo(&#39;mission&#39;)\'>私たちについて</button>'">
+      </span>
+
+      <!-- Image button: お問い合わせ (image 11) -->
+      <span class="img-btn" onclick="scrollTo('contact')" role="button" aria-label="お問い合わせ">
+        <img src="images/btn-contact.png" alt="お問い合わせ"
+             onerror="this.outerHTML='<button class=\'btn btn-gold\' onclick=\'scrollTo(&#39;contact&#39;)\'>お問い合わせ</button>'">
+      </span>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span class="scroll-cue-text">Scroll</span>
+    <div class="scroll-cue-line"></div>
+  </div>
+</section>
+
+
+<!-- ==================== MISSION / VISION / VALUES ==================== -->
+<section id="mission" class="section-wrap">
+  <div class="section-bg mission-bg" id="missionBg"></div>
+  <div class="section-overlay mission-overlay"></div>
+
+  <div class="section-inner mission-inner">
+    <span class="section-eyebrow reveal">Our Philosophy</span>
+    <h2 class="section-title reveal delay-1">Mission &amp;<br>Vision &amp; Value</h2>
+
+    <div class="mvv-grid">
+      <div class="mvv-card reveal from-left">
+        <span class="mvv-label">Mission</span>
+        <h3 class="mvv-heading">人と未来に、<br>価値ある変化を。</h3>
+        <p class="mvv-text">
+          私たちは、<br>
+          人・モノ・サービスが持つ本来の価値を引き出し、<br>
+          未来につながる変化を創り続けます。
+        </p>
+      </div>
+      <div class="mvv-card reveal delay-1">
+        <span class="mvv-label">Vision</span>
+        <h3 class="mvv-heading">挑戦と信頼で、<br>人生を前へ進める企業へ。</h3>
+        <p class="mvv-text">
+          挑戦する人を支え、<br>
+          信頼を積み重ねながら、<br>
+          誰かの未来を変える存在であり続けます。
+        </p>
+      </div>
+      <div class="mvv-card reveal from-right delay-2">
+        <span class="mvv-label">Value</span>
+        <h3 class="mvv-heading">三つの行動指針</h3>
+        <p class="mvv-text">
+          挑戦を止めない<br>
+          違いを強みに変える<br>
+          未来に責任を持つ
+        </p>
+      </div>
+    </div>
+
+    <p class="values-title reveal">Value — 私たちが大切にする三つのこと</p>
+
+    <div class="values-grid">
+      <div class="value-item reveal">
+        <span class="value-num">01</span>
+        <h4 class="value-name">挑戦を止めない</h4>
+        <p class="value-desc">失敗を恐れず、<br>変化と成長に挑み続けます。</p>
+      </div>
+      <div class="value-item reveal delay-1">
+        <span class="value-num">02</span>
+        <h4 class="value-name">違いを強みに変える</h4>
+        <p class="value-desc">異なる個性や考え方を尊重し、<br>新しい価値を生み出します。</p>
+      </div>
+      <div class="value-item reveal delay-2">
+        <span class="value-num">03</span>
+        <h4 class="value-name">未来に責任を持つ</h4>
+        <p class="value-desc">今だけではなく、<br>その先の人生や未来に<br>貢献できる選択をします。</p>
+      </div>
+    </div>
+
+    <div class="mission-cta reveal">
+      <!-- Image button: 内容を見る (image 13) -->
+      <span class="img-btn" onclick="scrollTo('services')" role="button" aria-label="内容を見る">
+        <img src="images/btn-services.png" alt="内容を見る"
+             onerror="this.outerHTML='<button class=\'btn btn-outline\' onclick=\'scrollTo(&#39;services&#39;)\'>内容を見る</button>'">
+      </span>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==================== STORY ==================== -->
+<section id="story" class="section-wrap">
+  <div class="section-bg story-bg" id="storyBg"></div>
+  <div class="section-overlay story-overlay"></div>
+
+  <div class="section-inner story-inner">
+    <span class="section-eyebrow reveal">Our Story</span>
+    <h2 class="section-title reveal delay-1">H&amp;Tに込めた想い</h2>
+
+    <p class="story-lead reveal delay-2">
+      H&T GROUPの名前は、<br>
+      「ウサギとカメ」の物語から生まれました。
+    </p>
+
+    <div class="story-divider reveal delay-3"></div>
+
+    <p class="story-lead reveal">
+      速く走れる人もいれば、<br>
+      一歩ずつ着実に進む人もいる。<br><br>
+      才能や得意なこと、<br>
+      歩むスピードは人それぞれ違います。<br><br>
+      私たちは、<br>
+      そのどちらにも<em>価値があると信じています。</em>
+    </p>
+
+    <div class="story-quote reveal delay-1">
+      "人に自信を与える力"。<br>
+      "未来を形にする力"。<br><br>
+      異なる個性だからこそ、<br>
+      支え合い、新しい価値を生み出せる。
+    </div>
+
+    <p class="story-lead reveal">
+      H&T GROUPは、<br>
+      関わってくれる仲間、お客様、そして挑戦する若者たちの、<br>
+      <em>人生を変えるきっかけを届ける存在</em>でありたいと考えています。<br><br>
+      夢を見る人が、<br>
+      安心して未来へ進める社会へ。<br><br>
+      その想いを胸に、<br>
+      私たちは挑戦を続けていきます。
+    </p>
+  </div>
+</section>
+
+
+<!-- ==================== SERVICES ==================== -->
+<section id="services" class="section-wrap">
+  <div class="section-bg services-bg" id="servicesBg"></div>
+  <div class="section-overlay services-overlay"></div>
+
+  <div class="section-inner services-inner">
+    <span class="section-eyebrow reveal">Our Services</span>
+    <h2 class="section-title reveal delay-1">事業内容</h2>
+
+    <!-- Ticker (images 17, 18 scroll right→left) -->
+    <div class="ticker-wrap reveal delay-2">
+      <div class="ticker-track" id="tickerTrack">
+        <div class="ticker-set" id="tickerSet1">
+          <span class="ticker-item">
+            <img src="images/ticker-01.png" alt="" onerror="this.style.display='none'">
+            ホワイトニング × 眉サロン　MIGAQ
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-02.png" alt="" onerror="this.style.display='none'">
+            HP・LP 作成サービス
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">挑戦する人の、人生を変えるきっかけを。</span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-01.png" alt="" onerror="this.style.display='none'">
+            ホワイトニング × 眉サロン　MIGAQ
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-02.png" alt="" onerror="this.style.display='none'">
+            HP・LP 作成サービス
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">H&T Group Inc. — 人と未来に、価値ある変化を。</span>
+          <span class="ticker-dot"></span>
+        </div>
+        <!-- Duplicate for seamless loop -->
+        <div class="ticker-set" id="tickerSet2" aria-hidden="true">
+          <span class="ticker-item">
+            <img src="images/ticker-01.png" alt="" onerror="this.style.display='none'">
+            ホワイトニング × 眉サロン　MIGAQ
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-02.png" alt="" onerror="this.style.display='none'">
+            HP・LP 作成サービス
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">挑戦する人の、人生を変えるきっかけを。</span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-01.png" alt="" onerror="this.style.display='none'">
+            ホワイトニング × 眉サロン　MIGAQ
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">
+            <img src="images/ticker-02.png" alt="" onerror="this.style.display='none'">
+            HP・LP 作成サービス
+          </span>
+          <span class="ticker-dot"></span>
+          <span class="ticker-item">H&T Group Inc. — 人と未来に、価値ある変化を。</span>
+          <span class="ticker-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service cards -->
+    <div class="services-grid">
+      <!-- MIGAQ -->
+      <div class="service-card reveal from-left">
+        <span class="service-tag">Service 01</span>
+        <h3 class="service-name">ホワイトニング×眉サロン<br>MIGAQ</h3>
+        <p class="service-desc">
+          京都初のホワイトニング＆眉毛サロン。<br>
+          あなた本来の美しさを、確かな技術で引き出します。<br><br>
+          ホワイトニングと眉毛デザインを一度に叶える、<br>
+          新しいビューティー体験をご提供しています。
+        </p>
+        <!-- Image button: 公式サイトへ (image 19) -->
+        <a href="https://migaq-beauty.com" target="_blank" rel="noopener noreferrer"
+           class="img-btn" aria-label="MIGAQ 公式サイトへ">
+          <img src="images/btn-official.png" alt="公式サイトへ"
+               onerror="this.outerHTML='<span class=\'btn btn-gold\'>公式サイトへ</span>'">
+        </a>
+      </div>
+
+      <!-- HP/LP -->
+      <div class="service-card reveal from-right">
+        <span class="service-tag">Service 02</span>
+        <h3 class="service-name">HP・LP<br>作成サービス</h3>
+        <p class="service-desc">
+          高品質なホームページ・ランディングページを<br>
+          ご要望に合わせてご提供します。<br><br>
+          デザインから実装まで一貫してサポート。<br>
+          ビジネスの可能性を最大限に引き出す<br>
+          Webソリューションをご提案します。
+        </p>
+        <!-- Image button: 詳細を見る (image 20) — temp link, update when ready -->
+        <a href="https://www.kyoto-u.ac.jp/ja" target="_blank" rel="noopener noreferrer"
+           class="img-btn" aria-label="詳細を見る">
+          <img src="images/btn-detail.png" alt="詳細を見る"
+               onerror="this.outerHTML='<span class=\'btn btn-outline\'>詳細を見る</span>'">
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==================== RECRUIT ==================== -->
+<section id="recruit">
+  <div class="recruit-inner">
+    <span class="section-eyebrow reveal">Join Us</span>
+    <h2 class="recruit-title reveal delay-1">
+      共に、未来を創る<br>仲間を募集しています。
+    </h2>
+
+    <p class="recruit-text reveal delay-2">
+      挑戦することを楽しめる人、<br>
+      自分の個性を武器にしたい人、<br>
+      誰かの人生に影響を与えたいと思っている人。<br><br>
+      あなたのスピードで、あなたらしく、<br>
+      一緒に歩んでいきましょう。
+    </p>
+
+    <!-- Icons row (images 14, 15, 16) -->
+    <div class="icons-row">
+      <div class="icon-item reveal from-left delay-1">
+        <img src="images/icon-01.png" alt="挑戦"
+             onerror="this.outerHTML='<div class=\'icon-fallback\'>Challenge</div>'">
+        <span class="icon-label">Challenge</span>
+      </div>
+      <div class="icon-item reveal delay-2">
+        <img src="images/icon-02.png" alt="多様性"
+             onerror="this.outerHTML='<div class=\'icon-fallback\'>Diversity</div>'">
+        <span class="icon-label">Diversity</span>
+      </div>
+      <div class="icon-item reveal from-right delay-3">
+        <img src="images/icon-03.png" alt="未来"
+             onerror="this.outerHTML='<div class=\'icon-fallback\'>Future</div>'">
+        <span class="icon-label">Future</span>
+      </div>
+    </div>
+
+    <div class="reveal delay-3">
+      <button class="btn btn-gold" onclick="scrollTo('contact')">まずは話を聞いてみる</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==================== CONTACT ==================== -->
+<section id="contact">
+  <div class="contact-inner">
+    <span class="section-eyebrow reveal">Contact</span>
+    <h2 class="section-title reveal delay-1">お問い合わせ</h2>
+
+    <div class="contact-meta reveal delay-2">
+      <div class="contact-meta-item">
+        <span class="meta-label">Email</span>
+        <p class="meta-value">
+          <a href="mailto:contact.htg.inc@gmail.com">contact.htg.inc@gmail.com</a>
+        </p>
+      </div>
+      <div class="contact-meta-item">
+        <span class="meta-label">Address</span>
+        <p class="meta-value">
+          〒600-8394<br>
+          京都府京都市下京区<br>
+          仏光寺堀川西入ル晒屋町635
+        </p>
+      </div>
+    </div>
+
+    <form class="contact-form" id="contactForm" onsubmit="handleSubmit(event)">
+      <div class="form-group reveal">
+        <label class="form-label">お名前</label>
+        <input type="text" class="form-input" name="name" placeholder="山田 太郎" required>
+      </div>
+      <div class="form-group reveal delay-1">
+        <label class="form-label">メールアドレス</label>
+        <input type="email" class="form-input" name="email" placeholder="example@email.com" required>
+      </div>
+      <div class="form-group reveal delay-2">
+        <label class="form-label">お問い合わせ内容</label>
+        <textarea class="form-textarea" name="message" placeholder="お問い合わせ内容をご記入ください。" required></textarea>
+      </div>
+      <button type="submit" class="btn-submit reveal delay-3">送信する</button>
+    </form>
+
+    <!-- Social icons (images 21, 22) -->
+    <div class="social-row reveal">
+      <!-- Instagram (image 21) -->
+      <a href="https://www.instagram.com/htg.inc?igsh=MWJ6YW9sc3Uzdmxweg%3D%3D&utm_source=qr"
+         target="_blank" rel="noopener noreferrer"
+         class="social-link" title="Instagram">
+        <img src="images/social-instagram.png" alt="Instagram"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <svg style="display:none;" viewBox="0 0 24 24" stroke-width="1.5">
+          <rect x="2" y="2" width="20" height="20" rx="5"/>
+          <circle cx="12" cy="12" r="4.5"/>
+          <circle cx="17.3" cy="6.7" r="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+      </a>
+
+      <!-- LINE (image 22) -->
+      <a href="https://lin.ee/px19jf7"
+         target="_blank" rel="noopener noreferrer"
+         class="social-link" title="LINE">
+        <img src="images/social-line.png" alt="LINE"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <svg style="display:none;" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+          <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+  <div class="footer-brand">
+    <img src="images/logo.png" alt="H&T Group Inc."
+         onerror="this.style.display='none'">
+    <span class="footer-brand-text">H&T Group Inc.</span>
+  </div>
+  <p class="footer-copy">&copy; 2025 H&T Group Inc. All rights reserved.</p>
+</footer>
+
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+  /* ---- Smooth scroll to section ---- */
+  function scrollTo(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const headerH = document.getElementById('header').offsetHeight;
+    const top = el.getBoundingClientRect().top + window.pageYOffset - headerH;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
+  /* ---- Header scroll effect ---- */
+  window.addEventListener('scroll', () => {
+    document.getElementById('header').classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+
+  /* ---- IntersectionObserver for reveal animations ---- */
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -48px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  /* ---- Hero elements trigger on load ---- */
+  window.addEventListener('load', () => {
+    document.querySelectorAll('#hero .reveal').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 140 + 200);
+    });
+  });
+
+  /* ---- Parallax on section backgrounds ---- */
+  const parallaxBgs = [
+    document.getElementById('heroBg'),
+    document.getElementById('missionBg'),
+    document.getElementById('storyBg'),
+    document.getElementById('servicesBg'),
+  ];
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        parallaxBgs.forEach(bg => {
+          if (!bg) return;
+          const section = bg.parentElement;
+          const rect = section.getBoundingClientRect();
+          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+          const offset = (scrollY - section.offsetTop) * 0.28;
+          bg.style.transform = `translateY(${offset}px)`;
+        });
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  /* ---- Contact form ---- */
+  function handleSubmit(e) {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const name = fd.get('name');
+    const email = fd.get('email');
+    const msg = fd.get('message');
+    const subject = encodeURIComponent(`【お問い合わせ】${name} 様`);
+    const body = encodeURIComponent(`お名前: ${name}\nメールアドレス: ${email}\n\n${msg}`);
+    window.location.href = `mailto:contact.htg.inc@gmail.com?subject=${subject}&body=${body}`;
+  }
+
+  /* ---- Mobile menu toggle ---- */
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    const nav = document.getElementById('main-nav');
+    const isOpen = nav.style.display === 'flex';
+    nav.style.cssText = isOpen
+      ? ''
+      : 'display:flex; flex-direction:column; position:fixed; top:72px; left:0; right:0; background:rgba(7,7,7,0.97); padding:32px 28px; gap:28px; border-bottom:1px solid rgba(255,255,255,0.07);';
+  });
+</script>
+
+</body>
+</html>

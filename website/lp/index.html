@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HP・LP作成サービス | H&T Group Inc.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Noto+Serif+JP:wght@200;300;400&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #070707;
+      --gold: #c9a870;
+      --gold-light: #e8d5b0;
+      --white: #f5f5f5;
+      --gray: #888888;
+      --border: rgba(255,255,255,0.07);
+      --fd: 'Cormorant Garamond', 'Noto Serif JP', serif;
+      --fb: 'Noto Sans JP', sans-serif;
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--fb);
+      font-weight: 300;
+      line-height: 1.8;
+      overflow-x: hidden;
+    }
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); }
+
+    /* Header */
+    .lp-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 56px;
+      height: 68px;
+      background: rgba(7,7,7,0.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lp-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--white);
+    }
+    .lp-brand img { height: 32px; width: auto; object-fit: contain; }
+    .lp-brand-text {
+      font-family: var(--fd);
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      color: var(--gold-light);
+    }
+
+    .lp-back {
+      font-family: var(--fd);
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      color: var(--gray);
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: color 0.2s var(--ease);
+    }
+    .lp-back:hover { color: var(--gold); }
+
+    /* Hero */
+    .lp-hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lp-hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('../images/bg-scene-02.jpg');
+      background-size: cover;
+      background-position: center;
+      background-color: #0a0c10;
+    }
+    .lp-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(7,7,7,0.55), rgba(7,7,7,0.80));
+    }
+
+    .lp-hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 120px 48px 80px;
+      max-width: 880px;
+    }
+
+    .lp-eyebrow {
+      display: block;
+      font-family: var(--fd);
+      font-size: 10px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.3s var(--ease) forwards;
+    }
+
+    .lp-title {
+      font-family: var(--fd);
+      font-size: clamp(36px, 5.5vw, 68px);
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      line-height: 1.2;
+      margin-bottom: 28px;
+      color: var(--white);
+      opacity: 0;
+      animation: fadeUp 0.9s 0.5s var(--ease) forwards;
+    }
+    .lp-title em { font-style: italic; color: var(--gold); }
+
+    .lp-sub {
+      font-size: clamp(13px, 1.4vw, 16px);
+      color: rgba(245,245,245,0.65);
+      line-height: 2.2;
+      margin-bottom: 52px;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.7s var(--ease) forwards;
+    }
+
+    .lp-cta-row {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.9s var(--ease) forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 48px;
+      font-family: var(--fd);
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease), background 0.22s var(--ease);
+      text-decoration: none;
+    }
+    .btn:hover { transform: scale(1.05); }
+    .btn-gold { background: var(--gold); color: var(--bg); }
+    .btn-gold:hover { background: var(--gold-light); box-shadow: 0 8px 36px rgba(201,168,112,0.35); }
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Showcase image */
+    .lp-showcase {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 48px;
+    }
+
+    .showcase-label {
+      display: block;
+      font-family: var(--fd);
+      font-size: 9.5px;
+      letter-spacing: 0.55em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .showcase-heading {
+      font-family: var(--fd);
+      font-size: clamp(28px, 3.5vw, 46px);
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 48px;
+    }
+
+    .showcase-img-wrap {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #111;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .showcase-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .showcase-placeholder {
+      text-align: center;
+      padding: 60px;
+    }
+    .showcase-placeholder h3 {
+      font-family: var(--fd);
+      font-size: 36px;
+      font-weight: 300;
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      margin-bottom: 16px;
+    }
+    .showcase-placeholder p {
+      font-size: 13px;
+      color: var(--gray);
+      letter-spacing: 0.1em;
+    }
+
+    /* Features */
+    .lp-features {
+      background: #0e0e0e;
+      padding: 100px 48px;
+    }
+
+    .features-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-top: 60px;
+    }
+
+    .feature-card {
+      background: #0e0e0e;
+      padding: 48px 36px;
+    }
+
+    .feature-num {
+      display: block;
+      font-family: var(--fd);
+      font-size: 48px;
+      font-weight: 300;
+      color: rgba(201,168,112,0.15);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .feature-name {
+      font-family: var(--fd);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 2.2;
+    }
+
+    /* CTA section */
+    .lp-final-cta {
+      text-align: center;
+      padding: 100px 48px;
+    }
+
+    .lp-final-title {
+      font-family: var(--fd);
+      font-size: clamp(28px, 3.5vw, 46px);
+      font-weight: 300;
+      color: var(--white);
+      margin-bottom: 24px;
+      line-height: 1.4;
+    }
+    .lp-final-title em { font-style: italic; color: var(--gold); }
+
+    .lp-final-sub {
+      font-size: 13px;
+      color: var(--gray);
+      line-height: 2.3;
+      margin-bottom: 52px;
+    }
+
+    /* Footer */
+    .lp-footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .lp-footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lp-footer-brand img { height: 28px; width: auto; }
+    .lp-footer-text { font-family: var(--fd); font-size: 12px; letter-spacing: 0.15em; color: var(--gray); }
+
+    .lp-footer-copy { font-size: 11px; color: #444; letter-spacing: 0.1em; }
+
+    @media (max-width: 768px) {
+      .lp-header { padding: 0 24px; }
+      .lp-hero-content, .lp-showcase, .lp-features, .lp-final-cta { padding-left: 24px; padding-right: 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .lp-footer { flex-direction: column; gap: 20px; text-align: center; padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="lp-header">
+  <a href="../" class="lp-brand">
+    <img src="../images/logo.png" alt="H&T Group" onerror="this.style.display='none'">
+    <span class="lp-brand-text">H&T Group Inc.</span>
+  </a>
+  <a href="../" class="lp-back">← Back to Top</a>
+</header>
+
+
+<section class="lp-hero">
+  <div class="lp-hero-bg"></div>
+  <div class="lp-hero-overlay"></div>
+
+  <div class="lp-hero-content">
+    <span class="lp-eyebrow">Service 02 — Web Creation</span>
+    <h1 class="lp-title">HP・LP<br><em>作成サービス</em></h1>
+    <p class="lp-sub">
+      ビジネスの想いを、確かなデザインと技術で形にします。<br>
+      あなたのブランドに最適なWebソリューションを、<br>
+      一貫してサポートします。
+    </p>
+    <div class="lp-cta-row">
+      <a href="mailto:contact.htg.inc@gmail.com?subject=HP・LP作成サービスについてのお問い合わせ"
+         class="btn btn-gold">お問い合わせ・ご相談</a>
+      <a href="../#contact" class="btn btn-outline">詳しくはこちら</a>
+    </div>
+  </div>
+</section>
+
+
+<!-- LP Showcase image (Image 2 from the design reference) -->
+<section class="lp-showcase">
+  <span class="showcase-label">Our Work</span>
+  <h2 class="showcase-heading">制作実績・サービスイメージ</h2>
+
+  <div class="showcase-img-wrap">
+    <img src="../images/lp-preview.jpg" alt="HP・LP作成サービス サービスイメージ"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+    <div class="showcase-placeholder" style="display:none;">
+      <h3>HP · LP Service</h3>
+      <p>高品質なホームページ・ランディングページを制作します</p>
+    </div>
+  </div>
+</section>
+
+
+<section class="lp-features">
+  <div class="features-inner">
+    <span class="showcase-label">What We Offer</span>
+    <h2 class="showcase-heading">選ばれる理由</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-num">01</span>
+        <h3 class="feature-name">高品質なデザイン</h3>
+        <p class="feature-desc">
+          ブランドの世界観に合わせた、<br>
+          洗練されたデザインをご提供。<br>
+          高級感・信頼感・先進性を<br>
+          デザインで表現します。
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-num">02</span>
+        <h3 class="feature-name">スピーディーな制作</h3>
+        <p class="feature-desc">
+          要件定義からリリースまで、<br>
+          スピーディーかつ丁寧に対応。<br>
+          お客様のビジネスを止めない<br>
+          スケジュール管理を心がけます。
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-num">03</span>
+        <h3 class="feature-name">アフターサポート</h3>
+        <p class="feature-desc">
+          リリース後もしっかりサポート。<br>
+          修正・更新・SEO対策など、<br>
+          長期的なパートナーとして<br>
+          ともに成長していきます。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="lp-final-cta">
+  <h2 class="lp-final-title">
+    あなたのビジネスを、<br>
+    <em>次のステージへ。</em>
+  </h2>
+  <p class="lp-final-sub">
+    まずはお気軽にご相談ください。<br>
+    一緒に、最適なWebソリューションを考えましょう。
+  </p>
+  <a href="mailto:contact.htg.inc@gmail.com?subject=HP・LP作成サービスについてのお問い合わせ"
+     class="btn btn-gold">無料相談はこちら</a>
+</section>
+
+
+<footer class="lp-footer">
+  <div class="lp-footer-brand">
+    <img src="../images/logo.png" alt="H&T Group" onerror="this.style.display='none'">
+    <span class="lp-footer-text">H&T Group Inc.</span>
+  </div>
+  <p class="lp-footer-copy">&copy; 2025 H&T Group Inc. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
