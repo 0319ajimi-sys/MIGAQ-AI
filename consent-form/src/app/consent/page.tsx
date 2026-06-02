@@ -1,540 +1,575 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, ChangeEvent } from 'react';
 import SignaturePad, { type SignaturePadRef } from '@/components/SignaturePad';
-import { generateRisk, RISK_LABEL, type RiskLevel } from '@/lib/riskGenerator';
 
-// ─── フォームの型 ─────────────────────────────────────────────────────────────
+// ─── 型定義 ───────────────────────────────────────────────────────────────────
 
-interface Form {
-  customerName: string;
-  customerPhone: string;
-  treatmentDate: string;
-  stylistName: string;
-  requestedTreatment: string;
-  hasBlackDye: boolean;
-  blackDyeMonths: string;
-  hasBleach: boolean;
-  bleachMonths: string;
-  hasStraightening: boolean;
-  straighteningMonths: string;
-  riskLevel: RiskLevel;
-  riskItems: string[];
-  consentRisk: boolean;
-  consentNoClaim: boolean;
-  consentHistory: boolean;
+interface History {
+  blackDye: boolean;
+  bleach: boolean;
+  straightening: boolean;
+  selfColor: boolean;
 }
 
-const INIT: Form = {
-  customerName: '', customerPhone: '',
-  treatmentDate: new Date().toISOString().split('T')[0],
-  stylistName: '', requestedTreatment: '',
-  hasBlackDye: false, blackDyeMonths: '',
-  hasBleach: false, bleachMonths: '',
-  hasStraightening: false, straighteningMonths: '',
-  riskLevel: 'low', riskItems: [],
-  consentRisk: false, consentNoClaim: false, consentHistory: false,
-};
+interface RiskResult {
+  level: 'none' | 'low' | 'medium' | 'high';
+  specific: string[];
+}
 
-const TREATMENTS = [
-  'カット', 'カラー（全体）', 'カラー（リタッチ）',
-  'ブリーチ（全体）', 'ブリーチ（ハイライト）',
-  'パーマ', '縮毛矯正', 'トリートメント', 'その他',
+// ─── リスク自動生成 ───────────────────────────────────────────────────────────
+
+function calcRisk(h: History, desiredColor: string): RiskResult {
+  const specific: string[] = [];
+  let score = 0;
+
+  const colorLower = desiredColor.toLowerCase();
+  const wantsBleach =
+    colorLower.includes('ブリーチ') ||
+    colorLower.includes('明るい') ||
+    colorLower.includes('ハイトーン') ||
+    colorLower.includes('金');
+
+  if (h.blackDye) {
+    score += 3;
+    specific.push(
+      '黒染め履歴があります。明るいカラー・ブリーチ施術では色が均一に入らず、オレンジや緑がかった色が残る可能性があります。'
+    );
+    if (wantsBleach) {
+      score += 2;
+      specific.push(
+        '希望カラーに対して黒染め履歴のリスクが高い状態です。1回の施術で到達できない場合があり、複数回の施術が必要になることがあります。'
+      );
+    }
+  }
+
+  if (h.bleach) {
+    score += 2;
+    specific.push(
+      'ブリーチ履歴があります。毛髪がダメージを受けており、断毛・切れ毛・チリつきのリスクがあります。'
+    );
+  }
+
+  if (h.straightening) {
+    score += 2;
+    specific.push(
+      '縮毛矯正の履歴があります。薬剤の化学的相互作用により、パーマ・カラーの仕上がりが予想と異なる場合があります。'
+    );
+  }
+
+  if (h.selfColor) {
+    score += 1;
+    specific.push(
+      'セルフカラーの履歴があります。使用した染料の残留により、サロンカラーの発色が不均一になる場合があります。'
+    );
+  }
+
+  if (h.blackDye && h.bleach) {
+    score += 2;
+    specific.push(
+      '【複合リスク】黒染め × ブリーチの組み合わせは、1回の施術で希望色に到達できない可能性が高いです。'
+    );
+  }
+
+  const level: RiskResult['level'] =
+    score === 0 ? 'none' :
+    score <= 2  ? 'low' :
+    score <= 5  ? 'medium' : 'high';
+
+  return { level, specific };
+}
+
+const COMMON_RISK = [
+  'アレルギー・かぶれ（かゆみ・赤み・腫れ）が現れた場合は直ちにお申し出ください。',
+  '施術後のホームケアが仕上がりの維持に大きく影響します。担当スタイリストの指示に従ってください。',
 ];
 
-// ─── 小コンポーネント ─────────────────────────────────────────────────────────
+const RISK_BADGE: Record<string, { label: string; cls: string }> = {
+  low:    { label: '低リスク', cls: 'border-[#555] text-[#555]' },
+  medium: { label: '中リスク', cls: 'border-[#6B3A00] text-[#6B3A00]' },
+  high:   { label: '高リスク', cls: 'border-[#7B0000] text-[#7B0000]' },
+};
 
-/** あり / なし トグル */
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+// ─── UI コンポーネント ────────────────────────────────────────────────────────
+
+/** セクションラベル（細い区切り線付き） */
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex border border-[#E0E0E0] overflow-hidden shrink-0">
-      {(['あり', 'なし'] as const).map((label, i) => {
-        const active = i === 0 ? value : !value;
-        return (
-          <button
-            key={label}
-            type="button"
-            onClick={() => onChange(i === 0)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-              active ? 'bg-[#0A0A0A] text-white' : 'bg-white text-[#9E9E9E] hover:bg-[#F5F5F5]'
-            }`}
-          >
-            {label}
-          </button>
-        );
-      })}
+    <div className="flex items-center gap-3 mb-6">
+      <span className="text-[9px] tracking-[4px] text-[#B0B0B0] font-medium uppercase whitespace-nowrap">
+        {children}
+      </span>
+      <div className="flex-1 h-px bg-[#EBEBEB]" />
     </div>
   );
 }
 
-/** チェックボックス行 */
-function Check({
-  checked, label, sub, onChange, required,
-}: {
-  checked: boolean; label: string; sub?: string;
-  onChange: (v: boolean) => void; required?: boolean;
-}) {
+/** フィールドラベル */
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label
-      className="flex items-start gap-3 py-4 border-b border-[#F0F0F0] last:border-0 cursor-pointer active:bg-[#FAFAFA]"
-      onClick={() => onChange(!checked)}
-    >
-      <span
-        className={`mt-0.5 w-5 h-5 shrink-0 border flex items-center justify-center transition-colors ${
-          checked ? 'bg-[#0A0A0A] border-[#0A0A0A]' : 'bg-white border-[#D0D0D0]'
-        }`}
-      >
-        {checked && (
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="text-sm leading-snug block">
-          {required && <span className="text-[#B71C1C] mr-1">*</span>}
-          {label}
-        </span>
-        {sub && <span className="text-xs text-[#9E9E9E] mt-0.5 block leading-relaxed">{sub}</span>}
-      </span>
+    <label className="block text-[10px] tracking-[3px] text-[#A0A0A0] mb-2.5">
+      {children}
+      {required && <span className="text-[#9B1C1C] ml-1">*</span>}
     </label>
   );
 }
 
-/** 入力ラベル */
-function Label({ text, required }: { text: string; required?: boolean }) {
+/** ボーダーボトム入力欄 */
+function LineInput({
+  type = 'text', placeholder, value, onChange, inputMode,
+}: {
+  type?: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  inputMode?: React.InputHTMLAttributes<HTMLInputElement>['inputMode'];
+}) {
   return (
-    <div className="text-[10px] tracking-[3px] text-[#9E9E9E] mb-1.5 uppercase">
-      {text}{required && <span className="text-[#B71C1C] ml-1">*</span>}
-    </div>
+    <input
+      type={type}
+      inputMode={inputMode}
+      placeholder={placeholder}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      autoComplete="off"
+      className="
+        w-full bg-transparent border-0 border-b border-[#D8D8D8]
+        py-3 text-[15px] text-[#0A0A0A] placeholder-[#D0D0D0]
+        focus:outline-none focus:border-[#0A0A0A]
+        transition-colors duration-200
+      "
+    />
+  );
+}
+
+/** 履歴チェック行 */
+function HistoryRow({
+  label, sub, checked, onToggle,
+}: {
+  label: string; sub: string; checked: boolean; onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="
+        w-full flex items-center gap-4 py-4 text-left
+        border-b border-[#F2F2F2] last:border-0
+        active:bg-[#FAFAFA] transition-colors
+      "
+    >
+      {/* カスタムチェックボックス */}
+      <span
+        className={`
+          w-[18px] h-[18px] border flex items-center justify-center
+          flex-shrink-0 transition-all duration-150
+          ${checked
+            ? 'bg-[#0A0A0A] border-[#0A0A0A]'
+            : 'border-[#C8C8C8] bg-white'}
+        `}
+      >
+        {checked && (
+          <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+            <path
+              d="M1 3.5L3 5.5L8 1"
+              stroke="white" strokeWidth="1.6"
+              strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </span>
+
+      <span className="flex-1 min-w-0">
+        <span className="text-[14px] font-medium text-[#1A1A1A] block leading-snug">
+          {label}
+        </span>
+        <span className="text-[11px] text-[#B0B0B0] block mt-0.5">{sub}</span>
+      </span>
+    </button>
   );
 }
 
 // ─── メインページ ─────────────────────────────────────────────────────────────
 
 export default function ConsentPage() {
-  const router    = useRouter();
-  const sigRef    = useRef<SignaturePadRef>(null);
-  const [step, setStep]     = useState(1);
-  const [form, setForm]     = useState<Form>(INIT);
-  const [signed, setSigned] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const sigRef  = useRef<SignaturePadRef>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const set = (p: Partial<Form>) => setForm(f => ({ ...f, ...p }));
+  const [name,         setName]         = useState('');
+  const [phone,        setPhone]        = useState('');
+  const [history,      setHistory]      = useState<History>({
+    blackDye: false, bleach: false, straightening: false, selfColor: false,
+  });
+  const [imgPreview,   setImgPreview]   = useState<string | null>(null);
+  const [desiredColor, setDesiredColor] = useState('');
+  const [understood,   setUnderstood]   = useState(false);
+  const [signed,       setSigned]       = useState(false);
+  const [submitting,   setSubmitting]   = useState(false);
 
-  // step2 → step3 でリスク自動計算
-  function enterStep3() {
-    const { level, items } = generateRisk(
-      form.hasBlackDye,    parseInt(form.blackDyeMonths)    || 99,
-      form.hasBleach,      parseInt(form.bleachMonths)      || 99,
-      form.hasStraightening, parseInt(form.straighteningMonths) || 99,
-      form.requestedTreatment
-    );
-    set({ riskLevel: level, riskItems: items });
-    setStep(3);
+  // リスク計算（チェック or 希望カラー変更のたびに再計算）
+  const { level, specific } = calcRisk(history, desiredColor);
+  const hasHistory = Object.values(history).some(Boolean);
+
+  const canSubmit = name.trim() !== '' && understood && signed && !submitting;
+
+  function toggleHistory(key: keyof History) {
+    setHistory(h => ({ ...h, [key]: !h[key] }));
+    setUnderstood(false); // 履歴変更時は再確認を促す
   }
 
-  // バリデーション
-  const step1OK = form.customerName.trim() && form.treatmentDate && form.stylistName.trim() && form.requestedTreatment;
-  const step3OK = form.consentRisk && form.consentNoClaim && form.consentHistory;
+  function handleImage(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setImgPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
 
-  // 送信
+  function clearImage() {
+    setImgPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
   async function handleSubmit() {
-    if (!sigRef.current || sigRef.current.isEmpty()) {
-      setError('署名を記入してください');
-      return;
-    }
-    setError('');
-    setSaving(true);
-    try {
-      const sigDataUrl = sigRef.current.getDataUrl();
-
-      // 1. Supabase保存
-      const res = await fetch('/api/consent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, signatureDataUrl: sigDataUrl }),
-      });
-      if (!res.ok) throw new Error('save failed');
-
-      // 2. PDF生成（動的インポートでバンドルサイズ最適化）
-      const { generatePDF } = await import('@/lib/pdfGenerator');
-      const blob = await generatePDF({ ...form, signatureDataUrl: sigDataUrl });
-
-      // 3. PDFダウンロード
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href     = url;
-      a.download = `${form.treatmentDate}_${form.customerName}_同意書.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      router.push(`/consent/complete?name=${encodeURIComponent(form.customerName)}`);
-    } catch {
-      setError('保存に失敗しました。もう一度お試しください。');
-    } finally {
-      setSaving(false);
-    }
+    // TODO: Supabase保存 + PDF生成
+    alert('送信機能は準備中です。');
   }
 
-  // リスクバッジの色
-  const riskStyle: Record<RiskLevel, string> = {
-    low:    'border-[#2E7D32] text-[#2E7D32]',
-    medium: 'border-[#E65100] text-[#E65100]',
-    high:   'border-[#B71C1C] text-[#B71C1C] bg-red-50',
-  };
-  const riskBorder: Record<RiskLevel, string> = {
-    low:    'border-l-[#2E7D32]',
-    medium: 'border-l-[#E65100]',
-    high:   'border-l-[#B71C1C]',
-  };
+  // 送信できない理由
+  const blockReason =
+    !name.trim()  ? '氏名を入力してください' :
+    !understood   ? 'リスク説明への同意が必要です' :
+    !signed       ? '署名を記入してください' : '';
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-white">
 
-      {/* ── ヘッダー ── */}
-      <header className="bg-white border-b border-[#E8E8E8] sticky top-0 z-20">
-        <div className="max-w-lg mx-auto px-5 pt-4 pb-3">
-          <div className="text-[9px] tracking-[5px] text-[#BBBBBB] mb-0.5">MIGAQ IMPRESSION SALON</div>
-          <div className="font-serif text-[17px] font-semibold tracking-wider">施術同意書</div>
-        </div>
-
-        {/* ステップバー */}
-        <div className="max-w-lg mx-auto px-5 pb-3">
-          <div className="flex gap-1 mb-1.5">
-            {[1,2,3,4].map(i => (
-              <div key={i} className={`h-[2px] flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-[#0A0A0A]' : 'bg-[#E8E8E8]'}`} />
-            ))}
-          </div>
-          <div className="flex justify-between">
-            {['お客様情報', '施術履歴', 'リスク確認', '電子署名'].map((t, i) => (
-              <span key={t} className={`text-[9px] tracking-wide ${i + 1 === step ? 'text-[#0A0A0A] font-semibold' : 'text-[#D0D0D0]'}`}>
-                {t}
-              </span>
-            ))}
-          </div>
+      {/* ══ ヘッダー ══════════════════════════════════════════════════ */}
+      <header className="sticky top-0 z-20 bg-white border-b border-[#EBEBEB]">
+        <div className="px-6 pt-5 pb-4">
+          <p className="text-[8px] tracking-[6px] text-[#C0C0C0] mb-1 uppercase">
+            Migaq Impression Salon
+          </p>
+          <h1 className="font-serif text-[18px] font-semibold tracking-widest text-[#0A0A0A]">
+            施術同意書
+          </h1>
         </div>
       </header>
 
-      {/* ── メインコンテンツ ── */}
-      <main className="max-w-lg mx-auto px-5 pt-6 pb-32">
+      {/* ══ メインコンテンツ ════════════════════════════════════════════ */}
+      <main className="px-6 pt-8 pb-36 space-y-12">
 
-        {/* ══ STEP 1: お客様情報 ══════════════════════════════════════ */}
-        {step === 1 && (
-          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
+        {/* ── 01. お客様情報 ─────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>01 — お客様情報</SectionLabel>
+          <div className="space-y-7">
             <div>
-              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">お客様情報</h2>
-              <p className="text-xs text-[#9E9E9E]">担当スタイリストが入力します。</p>
-            </div>
-
-            <div>
-              <Label text="お名前" required />
-              <input
-                type="text" autoComplete="off" placeholder="山田 花子"
-                value={form.customerName}
-                onChange={e => set({ customerName: e.target.value })}
-                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
+              <FieldLabel required>氏名</FieldLabel>
+              <LineInput
+                placeholder="山田 花子"
+                value={name}
+                onChange={setName}
               />
             </div>
-
             <div>
-              <Label text="電話番号" />
-              <input
-                type="tel" autoComplete="tel" placeholder="090-0000-0000"
-                value={form.customerPhone}
-                onChange={e => set({ customerPhone: e.target.value })}
-                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
+              <FieldLabel>電話番号</FieldLabel>
+              <LineInput
+                type="tel"
+                inputMode="tel"
+                placeholder="090-0000-0000"
+                value={phone}
+                onChange={setPhone}
               />
             </div>
+          </div>
+        </section>
 
-            <div>
-              <Label text="施術日" required />
-              <input
-                type="date"
-                value={form.treatmentDate}
-                onChange={e => set({ treatmentDate: e.target.value })}
-                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
+        {/* ── 02. 施術履歴 ───────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>02 — 施術履歴</SectionLabel>
+          <p className="text-[11px] text-[#B0B0B0] leading-relaxed mb-5">
+            安全な施術のため、過去の薬剤施術をお知らせください。
+          </p>
+          <div className="border-t border-[#F2F2F2]">
+            <HistoryRow
+              label="黒染め履歴あり"
+              sub="市販・サロン問わず"
+              checked={history.blackDye}
+              onToggle={() => toggleHistory('blackDye')}
+            />
+            <HistoryRow
+              label="ブリーチ履歴あり"
+              sub="全体・ハイライト・バレイヤージュ含む"
+              checked={history.bleach}
+              onToggle={() => toggleHistory('bleach')}
+            />
+            <HistoryRow
+              label="縮毛矯正履歴あり"
+              sub="酸性ストレート・デジタルパーマ含む"
+              checked={history.straightening}
+              onToggle={() => toggleHistory('straightening')}
+            />
+            <HistoryRow
+              label="セルフカラー履歴あり"
+              sub="市販染料・白髪染め含む"
+              checked={history.selfColor}
+              onToggle={() => toggleHistory('selfColor')}
+            />
+          </div>
+        </section>
+
+        {/* ── 03. 参考画像 ───────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>03 — 参考画像</SectionLabel>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleImage}
+          />
+          {imgPreview ? (
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imgPreview}
+                alt="参考画像"
+                className="w-full max-h-72 object-contain bg-[#F5F5F5]"
               />
-            </div>
-
-            <div>
-              <Label text="担当スタイリスト" required />
-              <input
-                type="text" autoComplete="off" placeholder="担当者名"
-                value={form.stylistName}
-                onChange={e => set({ stylistName: e.target.value })}
-                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors"
-              />
-            </div>
-
-            <div>
-              <Label text="施術メニュー" required />
-              <select
-                value={form.requestedTreatment}
-                onChange={e => set({ requestedTreatment: e.target.value })}
-                className="w-full border border-[#E0E0E0] bg-white px-4 py-3.5 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors appearance-none"
+              <button
+                type="button"
+                onClick={clearImage}
+                className="
+                  absolute top-2 right-2
+                  w-8 h-8 bg-[#0A0A0A]/75 text-white
+                  flex items-center justify-center text-xs
+                "
               >
-                <option value="">選択してください</option>
-                {TREATMENTS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+                ✕
+              </button>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="
+                  mt-2 w-full text-[11px] text-[#A0A0A0] tracking-wider
+                  border border-[#EBEBEB] py-2.5
+                  hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors
+                "
+              >
+                画像を変更する
+              </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="
+                w-full border border-dashed border-[#D0D0D0]
+                py-12 flex flex-col items-center gap-3
+                text-[#C0C0C0] active:bg-[#FAFAFA] transition-colors
+              "
+            >
+              {/* 画像アイコン */}
+              <svg
+                width="28" height="28" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="1.3"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="1.5" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <span className="text-[11px] tracking-widest">
+                タップして画像を選択
+              </span>
+              <span className="text-[10px] text-[#D0D0D0]">
+                カメラロール・ファイルから選択できます
+              </span>
+            </button>
+          )}
+        </section>
 
-        {/* ══ STEP 2: 施術履歴 ══════════════════════════════════════ */}
-        {step === 2 && (
-          <div className="space-y-4 animate-[fadeIn_.25s_ease-out]">
-            <div>
-              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">施術履歴</h2>
-              <p className="text-xs text-[#9E9E9E]">安全な施術のため、正確にお答えください。</p>
-            </div>
+        {/* ── 04. 希望カラー ─────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>04 — 希望カラー</SectionLabel>
+          <LineInput
+            placeholder="例：明るめのミルクティーベージュ"
+            value={desiredColor}
+            onChange={v => { setDesiredColor(v); setUnderstood(false); }}
+          />
+          <p className="text-[10px] text-[#C0C0C0] mt-2 leading-relaxed">
+            ご希望のイメージをできるだけ具体的にご記入ください
+          </p>
+        </section>
 
-            {/* 黒染め */}
-            <div className="bg-white border border-[#E0E0E0] p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">黒染め（ブラックカラー）</div>
-                  <div className="text-xs text-[#9E9E9E] mt-0.5">市販・サロン問わず</div>
-                </div>
-                <Toggle value={form.hasBlackDye} onChange={v => set({ hasBlackDye: v })} />
-              </div>
-              {form.hasBlackDye && (
-                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
-                  <Label text="何ヶ月前" />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text" inputMode="numeric" pattern="[0-9]*"
-                      placeholder="例: 6"
-                      value={form.blackDyeMonths}
-                      onChange={e => set({ blackDyeMonths: e.target.value })}
-                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
-                    />
-                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
-                  </div>
-                </div>
-              )}
-            </div>
+        {/* ── 05. リスク説明（自動生成） ─────────────────────────────── */}
+        <section>
+          <SectionLabel>05 — リスク説明</SectionLabel>
 
-            {/* ブリーチ */}
-            <div className="bg-white border border-[#E0E0E0] p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">ブリーチ（脱色）</div>
-                  <div className="text-xs text-[#9E9E9E] mt-0.5">全体・ハイライト含む</div>
-                </div>
-                <Toggle value={form.hasBleach} onChange={v => set({ hasBleach: v })} />
-              </div>
-              {form.hasBleach && (
-                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
-                  <Label text="何ヶ月前" />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text" inputMode="numeric" pattern="[0-9]*"
-                      placeholder="例: 3"
-                      value={form.bleachMonths}
-                      onChange={e => set({ bleachMonths: e.target.value })}
-                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
-                    />
-                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 縮毛矯正 */}
-            <div className="bg-white border border-[#E0E0E0] p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold">縮毛矯正・酸性ストレート</div>
-                  <div className="text-xs text-[#9E9E9E] mt-0.5">デジタルパーマ以外</div>
-                </div>
-                <Toggle value={form.hasStraightening} onChange={v => set({ hasStraightening: v })} />
-              </div>
-              {form.hasStraightening && (
-                <div className="mt-4 pt-4 border-t border-[#F0F0F0] animate-[fadeIn_.2s_ease-out]">
-                  <Label text="何ヶ月前" />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text" inputMode="numeric" pattern="[0-9]*"
-                      placeholder="例: 12"
-                      value={form.straighteningMonths}
-                      onChange={e => set({ straighteningMonths: e.target.value })}
-                      className="border border-[#E0E0E0] bg-white px-4 py-3 text-sm focus:outline-none focus:border-[#0A0A0A] transition-colors w-24"
-                    />
-                    <span className="text-sm text-[#9E9E9E]">ヶ月前</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ══ STEP 3: リスク確認 + 同意 ══════════════════════════════ */}
-        {step === 3 && (
-          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
-            <div>
-              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">リスク確認</h2>
-              <p className="text-xs text-[#9E9E9E]">施術前にリスクをご確認の上、同意してください。</p>
-            </div>
-
-            {/* リスク表示 */}
-            <div className={`bg-white border-l-4 p-5 ${riskBorder[form.riskLevel]}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[9px] tracking-[3px] text-[#9E9E9E]">リスク評価</span>
-                <span className={`border text-xs font-bold px-3 py-1 tracking-widest ${riskStyle[form.riskLevel]}`}>
-                  {RISK_LABEL[form.riskLevel]}
+          <div
+            className={`
+              border-l-[3px] pl-5 py-1 space-y-4
+              transition-all duration-300
+              ${level === 'high'   ? 'border-l-[#7B0000]' :
+                level === 'medium' ? 'border-l-[#6B3A00]' :
+                                     'border-l-[#0A0A0A]'}
+            `}
+          >
+            {/* リスクバッジ（履歴あり時のみ） */}
+            {hasHistory && level !== 'none' && (
+              <div className="flex items-center gap-3 mb-2">
+                <span
+                  className={`
+                    text-[9px] font-bold tracking-[3px] px-3 py-1.5 border
+                    ${RISK_BADGE[level]?.cls}
+                  `}
+                >
+                  {RISK_BADGE[level]?.label}
                 </span>
               </div>
+            )}
+
+            {/* 固有リスク */}
+            {specific.length > 0 && (
               <div className="space-y-3">
-                {form.riskItems.map((item, i) => (
-                  <div key={i} className="flex gap-2 text-xs text-[#444] leading-relaxed">
-                    <span className="text-[#9E9E9E] shrink-0 mt-0.5">—</span>
+                {specific.map((item, i) => (
+                  <div key={i} className="flex gap-2.5 text-[12px] text-[#3A3A3A] leading-relaxed">
+                    <span className="text-[#A0A0A0] flex-shrink-0 mt-0.5 font-serif">—</span>
                     <span>{item}</span>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* 同意チェックボックス */}
-            <div className="bg-white border border-[#E0E0E0]">
-              <div className="px-5 pt-4 pb-2 border-b border-[#F0F0F0]">
-                <div className="text-[9px] tracking-[3px] text-[#9E9E9E]">同意事項</div>
-              </div>
-              <div className="px-5">
-                <Check
-                  checked={form.consentRisk} required
-                  onChange={v => set({ consentRisk: v })}
-                  label="上記リスク説明の内容を理解し、施術を依頼します"
-                  sub="ダメージ・色ムラ等のリスクを理解した上で施術を希望します。"
-                />
-                <Check
-                  checked={form.consentNoClaim} required
-                  onChange={v => set({ consentNoClaim: v })}
-                  label="施術後の返金・過剰なやり直し要求は行いません"
-                  sub="リスクを承知の上での依頼のため、施術後の返金要求は行いません。"
-                />
-                <Check
-                  checked={form.consentHistory} required
-                  onChange={v => set({ consentHistory: v })}
-                  label="施術履歴は正確に申告しました"
-                  sub="虚偽申告により生じたトラブルはサロンの責任範囲外となります。"
-                />
-              </div>
-            </div>
-
-            {!step3OK && (
-              <p className="text-xs text-[#B71C1C] text-center">
-                ＊ 3項目すべてにチェックを入れてください
-              </p>
             )}
+
+            {/* 区切り（固有リスクありの場合のみ） */}
+            {specific.length > 0 && (
+              <div className="border-t border-[#F0F0F0] pt-3" />
+            )}
+
+            {/* 共通事項 */}
+            <div className="space-y-3">
+              {COMMON_RISK.map((item, i) => (
+                <div key={i} className="flex gap-2.5 text-[12px] text-[#888] leading-relaxed">
+                  <span className="text-[#C0C0C0] flex-shrink-0 mt-0.5 font-serif">—</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+        </section>
 
-        {/* ══ STEP 4: 電子署名 ════════════════════════════════════════ */}
-        {step === 4 && (
-          <div className="space-y-5 animate-[fadeIn_.25s_ease-out]">
-            <div>
-              <h2 className="font-serif text-xl font-semibold tracking-wide mb-1">電子署名</h2>
-              <p className="text-xs text-[#9E9E9E]">
-                同意いただけましたら、下枠に指でサインしてください。<br />
-                署名後、PDFが自動でダウンロードされます。
-              </p>
-            </div>
+        {/* ── 06. 同意 ───────────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>06 — 同意</SectionLabel>
 
-            {/* 確認サマリー */}
-            <div className="bg-white border border-[#E0E0E0] p-4 space-y-1.5 text-xs text-[#666]">
-              <div><span className="font-semibold text-[#0A0A0A]">{form.customerName} 様</span></div>
-              <div>施術日：{form.treatmentDate}　担当：{form.stylistName}</div>
-              <div>施術内容：{form.requestedTreatment}</div>
-            </div>
+          <button
+            type="button"
+            onClick={() => setUnderstood(u => !u)}
+            className="
+              w-full flex items-start gap-4 text-left
+              active:bg-[#FAFAFA] transition-colors py-1
+            "
+          >
+            <span
+              className={`
+                w-[18px] h-[18px] border flex items-center justify-center
+                flex-shrink-0 mt-0.5 transition-all duration-150
+                ${understood
+                  ? 'bg-[#0A0A0A] border-[#0A0A0A]'
+                  : 'border-[#C8C8C8] bg-white'}
+              `}
+            >
+              {understood && (
+                <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                  <path
+                    d="M1 3.5L3 5.5L8 1"
+                    stroke="white" strokeWidth="1.6"
+                    strokeLinecap="round" strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
 
-            {/* 署名キャンバス */}
-            <div className="bg-white border border-[#E0E0E0]">
-              <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-[#F0F0F0]">
-                <Label text="ご署名" required />
-                <button
-                  type="button"
-                  onClick={() => { sigRef.current?.clear(); setSigned(false); }}
-                  className="text-[10px] text-[#9E9E9E] underline"
-                >
-                  クリア
-                </button>
-              </div>
-              <div className="relative">
-                <SignaturePad ref={sigRef} onSign={() => setSigned(true)} />
-                {!signed && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-xs text-[#CCCCCC] tracking-wider">ここに署名してください</span>
-                  </div>
-                )}
-              </div>
-              <div className="px-4 py-2 border-t border-[#F0F0F0]">
-                <p className="text-[10px] text-[#BBBBBB]">タッチまたはマウスでサインしてください</p>
-              </div>
-            </div>
+            <span className="flex-1">
+              <span className="text-[14px] font-medium text-[#0A0A0A] block leading-snug">
+                上記リスク説明の内容を理解しました
+              </span>
+              <span className="text-[11px] text-[#A8A8A8] block mt-1.5 leading-relaxed">
+                施術履歴・リスク説明を確認した上で施術を依頼します。
+                施術後の返金・過剰なやり直し要求は行いません。
+              </span>
+            </span>
+          </button>
+        </section>
 
-            {error && (
-              <div className="bg-red-50 border border-[#B71C1C]/30 text-[#B71C1C] text-xs p-3 text-center">
-                {error}
+        {/* ── 07. 電子署名 ───────────────────────────────────────────── */}
+        <section>
+          <SectionLabel>07 — 電子署名</SectionLabel>
+          <p className="text-[11px] text-[#B0B0B0] mb-4 leading-relaxed">
+            指またはスタイラスで枠内にサインしてください。
+          </p>
+
+          <div className="border border-[#D8D8D8] relative bg-[#F8F8F8]">
+            <SignaturePad
+              ref={sigRef}
+              onSign={() => setSigned(true)}
+            />
+            {!signed && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-[12px] text-[#CCCCCC] tracking-wider font-serif">
+                  ここに署名
+                </span>
               </div>
             )}
           </div>
-        )}
+
+          {signed && (
+            <button
+              type="button"
+              onClick={() => {
+                sigRef.current?.clear();
+                setSigned(false);
+              }}
+              className="mt-2.5 text-[11px] text-[#ABABAB] tracking-wider underline underline-offset-2"
+            >
+              クリアして書き直す
+            </button>
+          )}
+        </section>
+
       </main>
 
-      {/* ── ボトムナビ ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E8E8E8] safe-area-bottom">
-        <div className="max-w-lg mx-auto px-5 py-4 flex gap-3">
-          {step > 1 && (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setStep(s => (s - 1) as 1|2|3|4)}
-              className="flex-1 border border-[#0A0A0A] text-[#0A0A0A] py-3.5 text-sm font-medium tracking-widest hover:bg-[#0A0A0A] hover:text-white transition-colors disabled:opacity-40"
-            >
-              戻る
-            </button>
+      {/* ══ 固定送信ボタン ════════════════════════════════════════════ */}
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#EBEBEB]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="px-6 py-4">
+          {/* バリデーションメッセージ */}
+          {blockReason && (
+            <p className="text-[10px] text-[#A0A0A0] tracking-wider text-center mb-3">
+              {blockReason}
+            </p>
           )}
 
-          {step < 4 && (
-            <button
-              type="button"
-              disabled={
-                (step === 1 && !step1OK) ||
-                (step === 3 && !step3OK)
-              }
-              onClick={() => {
-                if (step === 2) { enterStep3(); }
-                else { setStep(s => (s + 1) as 1|2|3|4); }
-              }}
-              className="flex-1 bg-[#0A0A0A] text-white py-3.5 text-sm font-medium tracking-widest hover:bg-[#333] transition-colors disabled:bg-[#D0D0D0] disabled:cursor-not-allowed"
-            >
-              次へ
-            </button>
-          )}
-
-          {step === 4 && (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleSubmit}
-              className="flex-1 bg-[#0A0A0A] text-white py-3.5 text-sm font-medium tracking-widest hover:bg-[#333] transition-colors disabled:bg-[#D0D0D0] disabled:cursor-not-allowed"
-            >
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75" />
-                  </svg>
-                  保存中...
-                </span>
-              ) : '同意して保存'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="
+              w-full py-4
+              text-[13px] font-medium tracking-[5px]
+              transition-all duration-200
+              disabled:cursor-not-allowed
+              bg-[#0A0A0A] text-white
+              disabled:bg-[#D8D8D8] disabled:text-[#F0F0F0]
+            "
+          >
+            {submitting ? '送信中...' : '同意して送信'}
+          </button>
         </div>
       </div>
+
     </div>
   );
 }

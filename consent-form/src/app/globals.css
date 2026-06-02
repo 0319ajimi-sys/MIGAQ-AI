@@ -2,25 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-* { -webkit-tap-highlight-color: transparent; }
+/* ── ベース ──────────────────────────────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  overscroll-behavior-y: none;
+}
 
 body {
-  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP',
-    Meiryo, 'Yu Gothic', sans-serif;
-  background-color: #FAFAFA;
+  font-family:
+    'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
+    'Noto Sans JP', Meiryo, 'Yu Gothic', sans-serif;
+  background: #ffffff;
   color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── セリフ体（見出し用） ───────────────────────────────────────────── */
 .font-serif {
-  font-family: 'Hiragino Mincho ProN', 'Noto Serif JP', 'Yu Mincho', Georgia, serif;
+  font-family:
+    'Hiragino Mincho ProN', 'Noto Serif JP',
+    'Yu Mincho', 'Georgia', serif;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+/* ── iOS セーフエリア ────────────────────────────────────────────────── */
+.safe-area-pb {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* ── アニメーション ──────────────────────────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+.anim-in {
+  animation: fadeSlideUp 0.25s ease-out both;
 }
